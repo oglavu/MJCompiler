@@ -3,5 +3,9 @@
 .project
 lib/*
 bin/*
+logs/*
+src/*
 *.class
 *.jar
+
+spec/*_astbuild.cup

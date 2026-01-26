@@ -1,0 +1,10 @@
+program MJProgram
+	int x; int y;
+{
+
+	int main() {
+		x = 3;
+		
+		return 1;
+	}
+}
