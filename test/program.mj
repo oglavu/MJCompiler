@@ -1,10 +1,15 @@
 program MJProgram
 	int x; int y;
+	enum myEnum {
+		enumElem1,
+		enumElem2 = 2,
+		enumElem3
+	}
+	char x[];
 {
 
-	int main() {
-		x = 3;
-		
-		return 1;
+	void main() int z; {
+		x = new int[5];
+		return;
 	}
 }
