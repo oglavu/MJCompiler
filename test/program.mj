@@ -1,15 +1,12 @@
 program MJProgram
-	int x; int y;
-	enum myEnum {
-		enumElem1,
-		enumElem2 = 2,
-		enumElem3
-	}
-	char x[];
+	int x, y;
 {
 
 	void main() int z; {
-		x = new int[5];
+		x++;
+		y--;
+		
+		x = x==0 ? y+3*2 : 2%3+1;
 		return;
 	}
 }

@@ -59,6 +59,7 @@ import java_cup.runtime.Symbol;
 ";" 		{ return new_symbol(sym.SEMI, yytext()); }
 "," 		{ return new_symbol(sym.COMMA, yytext()); }
 "." 		{ return new_symbol(sym.DOT, yytext()); }
+"?" 		{ return new_symbol(sym.QUESTION, yytext()); }
 
 "(" 		{ return new_symbol(sym.LPAREN, yytext()); }
 ")" 		{ return new_symbol(sym.RPAREN, yytext()); }

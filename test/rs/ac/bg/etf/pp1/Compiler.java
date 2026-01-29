@@ -70,7 +70,7 @@ public class Compiler {
 				//Code.mainPc = cg.getmainPc();
 				//Code.write(new FileOutputStream(objFile));
 				
-				log.info("Generisanje uspesno zavrseno!");
+				log.info("Parsiranje uspesno zavrseno!");
 			}else{
 				log.error("Parsiranje NIJE uspesno zavrseno!");
 			}

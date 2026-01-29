@@ -50,7 +50,7 @@ scan with {:
 :}
 
 terminal PROG, ENUM, CONST, READ, LENGTH, PRINT, RETURN, VOID, NEW;
-terminal INC, PLUS, MUL, DIV, MOD, MINUS, DEC, ASSIGN, COLON, SEMI, COMMA, DOT;
+terminal INC, PLUS, MUL, DIV, MOD, MINUS, DEC, ASSIGN, COLON, SEMI, COMMA, DOT, QUESTION;
 terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
 terminal RELOP_EQ, RELOP_NEQ, RELOP_GT, RELOP_GE, RELOP_LT, RELOP_LE;
 terminal String IDENT;
@@ -59,6 +59,7 @@ terminal Character CHARACTER;
 
 nonterminal Program, ProgramName, ConVarEnumDecList, ConDecList, ConDecl, ConDeclMore, Constant, VarDeclList, VarDecl, VarDeclMore, EnumDecl, EnumElemList, EnumElem, EnumElemAssign, Type;
 nonterminal MainMethod, StatementList, Statement, DesignatorStatement, Expr, AddopTermList, Term, MulopFactorList, Factor, Unary, FactorSub;
+nonterminal ExprNoTernary, CondFact, CondTrueExpr, CondFalseExpr;
 nonterminal Designator, DesignatorEnumElemName;
 nonterminal Assignop, Addop, Mulop, Relop;
 
@@ -154,16 +155,26 @@ DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						(DesignatorStatement_dec) Designator DEC
 						;
 						
-Expr ::= (Expr)  AddopTermList
-		 ;
+Expr ::=	(Expr_nonternary) ExprNoTernary
+			|
+			(Expr_ternary) CondFact QUESTION CondTrueExpr COLON CondFalseExpr
+		 	;
+		 	
+ExprNoTernary ::=	(ExprNoTernary) AddopTermList;
 		 
 AddopTermList ::= 	(AddopTermList_add) AddopTermList Addop Term
 					|
 					(AddopTermList_term) Term
-					|
-					(AddopTermList_relop) AddopTermList Relop Term
 					;
-   
+
+CondFact ::= 	(CondFactNoRelop) ExprNoTernary
+             	|
+             	(CondFactRelop) ExprNoTernary Relop ExprNoTernary
+             	;
+
+CondTrueExpr ::=	(CondTrueExpr) Expr;
+
+CondFalseExpr ::=	(CondFalseExpr) Expr;
 
 Term ::= (Term) MulopFactorList
 		 ;
