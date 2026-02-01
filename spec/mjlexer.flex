@@ -38,10 +38,10 @@ import java_cup.runtime.Symbol;
 "\f" 	{ }
 
 "program"   { return new_symbol(sym.PROG, yytext());}
+"main"		{ return new_symbol(sym.MAIN, yytext());}
 "enum"   	{ return new_symbol(sym.ENUM, yytext());}
 "const"		{ return new_symbol(sym.CONST, yytext());}
 "read"		{ return new_symbol(sym.READ, yytext());}
-"length"	{ return new_symbol(sym.LENGTH, yytext());}
 "print" 	{ return new_symbol(sym.PRINT, yytext()); }
 "return" 	{ return new_symbol(sym.RETURN, yytext()); }
 "void" 		{ return new_symbol(sym.VOID, yytext()); }

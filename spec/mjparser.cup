@@ -49,7 +49,7 @@ scan with {:
 	return s;
 :}
 
-terminal PROG, ENUM, CONST, READ, LENGTH, PRINT, RETURN, VOID, NEW;
+terminal PROG, MAIN, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW;
 terminal INC, PLUS, MUL, DIV, MOD, MINUS, DEC, ASSIGN, COLON, SEMI, COMMA, DOT, QUESTION;
 terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
 terminal RELOP_EQ, RELOP_NEQ, RELOP_GT, RELOP_GE, RELOP_LT, RELOP_LE;
@@ -57,11 +57,15 @@ terminal String IDENT;
 terminal Integer NUMBER, BOOL;
 terminal Character CHARACTER;
 
-nonterminal Program, ProgramName, ConVarEnumDecList, ConDecList, ConDecl, ConDeclMore, Constant, VarDeclList, VarDecl, VarDeclMore, EnumDecl, EnumElemList, EnumElem, EnumElemAssign, Type;
-nonterminal MainMethod, StatementList, Statement, DesignatorStatement, Expr, AddopTermList, Term, MulopFactorList, Factor, Unary, FactorSub;
+nonterminal Program, ProgramName, ConVarEnumDecList, Type, ConDecList, ConDecl, ConDeclMore, Constant, VarDeclList, VarDecl, VarDeclMore;
+nonterminal EnumDecl, EnumName, EnumElemList, EnumElem;
+nonterminal MainMethod, MainName, StatementList, Statement, DesignatorStatement;
 nonterminal ExprNoTernary, CondFact, CondTrueExpr, CondFalseExpr;
-nonterminal Designator, DesignatorEnumElemName;
 nonterminal Assignop, Addop, Mulop, Relop;
+
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, AddopTermList, MulopFactorList, Factor, FactorSub, Term, Unary;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator;
+
 
 Program ::= (Program) PROG ProgramName ConVarEnumDecList LBRACE MainMethod RBRACE;
 
@@ -106,26 +110,27 @@ VarDeclMore ::= (VarDeclMore_comma) COMMA VarDecl VarDeclMore
 				(VarDeclMore_e) /* epsilon */
 				; 
 				
-EnumDecl ::= (EnumDecl) ENUM IDENT LBRACE EnumElemList RBRACE;
+EnumDecl ::=	(EnumDecl) ENUM EnumName LBRACE  EnumElemList RBRACE;
 
-EnumElemList ::= 	(EnumElemList_rec) EnumElem EnumElemList
-					|
-					(EnumElemList_nxt) COMMA EnumElem EnumElemList
-					|
-					(EnumElemList_e) /* epsilon */
-					;
-
-EnumElem ::=	(DeclEnumElem_comma) IDENT EnumElemAssign
+EnumName ::=	(EnumName) IDENT
 				;
 
-EnumElemAssign ::=	(EnumElemAssign_assign) ASSIGN NUMBER
+EnumElemList ::= 	(EnumElemList_list) EnumElemList COMMA EnumElem
 					|
-					(EnumElemAssign_eps) /* epsilon */
+					(EnumElemList_elem) EnumElem
 					;
+
+EnumElem ::=	(EnumElemExplicit) IDENT ASSIGN NUMBER
+				|
+				(EnumElemImplicit) IDENT
+				;
 
 Type ::= (Type) IDENT;
 
-MainMethod ::= (MainMethod) VOID IDENT LPAREN RPAREN VarDeclList LBRACE StatementList RBRACE;
+MainMethod ::= (MainMethod) VOID MainName LPAREN RPAREN VarDeclList LBRACE StatementList RBRACE;
+
+MainName ::=	(MainName) MAIN
+				;
 
 StatementList ::= 	(StatementList_rec) StatementList Statement
 				   	|										   
@@ -155,7 +160,7 @@ DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						(DesignatorStatement_dec) Designator DEC
 						;
 						
-Expr ::=	(Expr_nonternary) ExprNoTernary
+Expr ::=	(Expr_noternary) ExprNoTernary
 			|
 			(Expr_ternary) CondFact QUESTION CondTrueExpr COLON CondFalseExpr
 		 	;
@@ -205,16 +210,11 @@ FactorSub ::= 	(FactorSub_var) Designator
 		   		(FactorSub_expr) LPAREN Expr RPAREN
 		   		;
 		   		
-Designator ::= 	(Designator_var) IDENT
+Designator ::= 	(Designator_simple) IDENT
 				|
-				(Designator_length) Designator DOT LENGTH
-				|
-				(Designator_enum) Designator DOT DesignatorEnumElemName
+				(Designator_dot) Designator DOT IDENT
 				|
 				(Designator_arr) Designator LBRACK Expr RBRACK
-				;
-				
-DesignatorEnumElemName ::= (DesignatorEnumElemName) IDENT
 				;
 
 Assignop ::= (Assignop) ASSIGN;

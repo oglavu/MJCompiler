@@ -14,6 +14,9 @@ import org.apache.log4j.xml.DOMConfigurator;
 
 import rs.ac.bg.etf.pp1.ast.*;
 import rs.ac.bg.etf.pp1.util.Log4JUtils;
+import rs.etf.pp1.symboltable.Tab;
+import rs.etf.pp1.symboltable.concepts.Obj;
+import rs.etf.pp1.symboltable.concepts.Struct;
 
 public class Compiler {
 
@@ -42,24 +45,8 @@ public class Compiler {
 	        
 			/* Ispis AST */
 			log.info(prog.toString(""));
-			log.info("=====================================================================");
 			
-			/* Inicijalizacija tabele simbola */
-			//Tab.init();
-			//Struct boolType = new Struct(Struct.Bool);
-			//Obj boolObj = Tab.insert(Obj.Type, "bool", boolType);
-			//boolObj.setAdr(-1);
-			//boolObj.setLevel(-1);
-			
-			/* Semanticka analiza */
-			//SemAnalyzer sa = new SemAnalyzer();
-			//prog.traverseBottomUp(sa);
-			
-			/* Ispis tabele simbola */
-			//log.info("=====================================================================");
-			//Tab.dump();
-			
-			if(!p.errorDetected /*&& sa.passed()*/){
+			if(!p.errorDetected){
 				/* Generisanje koda */
 				//File objFile = new File("test/program.obj");
 				//if(objFile.exists()) objFile.delete();
@@ -73,6 +60,29 @@ public class Compiler {
 				log.info("Parsiranje uspesno zavrseno!");
 			}else{
 				log.error("Parsiranje NIJE uspesno zavrseno!");
+			}
+			log.info("=====================================================================");
+			
+			
+			/* Semanticka analiza */
+			/* Inicijalizacija tabele simbola */
+			Tab.init();
+			Struct boolType = new Struct(Struct.Bool);
+			Obj boolObj = Tab.insert(Obj.Type, "bool", boolType);
+			boolObj.setAdr(-1);
+			boolObj.setLevel(-1);
+			
+			SemanticAnalyzer sa = new SemanticAnalyzer();
+			prog.traverseBottomUp(sa);
+			
+			/* Ispis tabele simbola */
+			log.info("=====================================================================");
+			Tab.dump();
+			
+			if (sa.passed()) {
+				log.info("Kod semanticki ispravan!");
+			} else {
+				log.info("Kod semanticki NEispravan!");
 			}
 			
 		} 

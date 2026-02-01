@@ -1,12 +1,8 @@
 program MJProgram
-	int x, y;
+	int z[];
 {
 
-	void main() int z; {
-		x++;
-		y--;
-		
-		x = x==0 ? y+3*2 : 2%3+1;
-		return;
+	void main() int a; {
+		print(z.length);
 	}
 }
