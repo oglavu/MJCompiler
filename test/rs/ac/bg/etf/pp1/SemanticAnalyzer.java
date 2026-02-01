@@ -1,7 +1,5 @@
 package rs.ac.bg.etf.pp1;
 
-import java.util.HashSet;
-
 import org.apache.log4j.Logger;
 
 import rs.ac.bg.etf.pp1.ast.*;
@@ -79,18 +77,18 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	/* CONST DECLARATIONS */
 	@Override
-	public void visit(ConDecl conDecl) {
-		Obj conObj = Tab.find(conDecl.getI1());
+	public void visit(ConstAssign constAssign) {
+		Obj conObj = Tab.find(constAssign.getI1());
 		if(conObj != Tab.noObj) {
-			report_error("Dvostruka definicija konstante: " + conDecl.getI1(), conDecl);
+			report_error("Dvostruka definicija konstante: " + constAssign.getI1(), constAssign);
 		}
 		else {
 			if(constantType.assignableTo(currentType)) {
-				conObj = Tab.insert(Obj.Con, conDecl.getI1(), currentType);
+				conObj = Tab.insert(Obj.Con, constAssign.getI1(), currentType);
 				conObj.setAdr(constant);
 			}
 			else {
-				report_error("Neadekvatna dodela konstanti: " + conDecl.getI1(), conDecl);
+				report_error("Neadekvatna dodela konstanti: " + constAssign.getI1(), constAssign);
 			}
 		}
 	}
@@ -115,28 +113,28 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	/* VAR DECLARATIONS */
 	@Override
-	public void visit(VarDecl_var varDecl_var) {
+	public void visit(Var_var var_var) {
 		Obj varObj = null;
-		varObj = Tab.currentScope().findSymbol(varDecl_var.getI1());
+		varObj = Tab.currentScope().findSymbol(var_var.getI1());
 
 		if(varObj == null || varObj == Tab.noObj) {
-			varObj = Tab.insert(Obj.Var, varDecl_var.getI1(), currentType);
+			varObj = Tab.insert(Obj.Var, var_var.getI1(), currentType);
 		}
 		else{
-			report_error("Dvostruka definicija promenljiva: " + varDecl_var.getI1(), varDecl_var);
+			report_error("Dvostruka definicija promenljiva: " + var_var.getI1(), var_var);
 		}
 	}
 	
 	@Override
-	public void visit(VarDecl_array varDecl_array) {
+	public void visit(Var_arr var_arr) {
 		Obj varObj = null;
-		varObj = Tab.currentScope().findSymbol(varDecl_array.getI1());
+		varObj = Tab.currentScope().findSymbol(var_arr.getI1());
 		
 		if(varObj == null || varObj == Tab.noObj) {
-			varObj = Tab.insert(Obj.Var, varDecl_array.getI1(), new Struct(Struct.Array, currentType));
+			varObj = Tab.insert(Obj.Var, var_arr.getI1(), new Struct(Struct.Array, currentType));
 		}
 		else{
-			report_error("Dvostruka definicija promenljiva: " + varDecl_array.getI1(), varDecl_array);
+			report_error("Dvostruka definicija promenljiva: " + var_arr.getI1(), var_arr);
 		}
 	}
 	
@@ -369,6 +367,44 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(Expr_noternary expr_noternary) {
 		expr_noternary.struct = expr_noternary.getExprNoTernary().getAddopTermList().struct;
+	}
+	
+	//Ternary
+	public void visit(Expr_ternary expr_ternary) {
+		Struct trueStruct = expr_ternary.getExpr().struct,
+			falseStruct = expr_ternary.getExpr1().struct,
+			condStruct = expr_ternary.getCondFact().struct;
+		if (!condStruct.equals(boolType)) {
+			report_error("Uslov mora biti bool", expr_ternary);
+			expr_ternary.struct = Tab.noType;
+		} else if (trueStruct.equals(Tab.noType)) {
+			report_error("TrueExpr ne sme biti noType", expr_ternary);
+			expr_ternary.struct = Tab.noType;
+		} else if (falseStruct.equals(Tab.noType)) {
+			report_error("FalseExpr ne sme biti noType", expr_ternary);
+			expr_ternary.struct = Tab.noType;
+		} else if (falseStruct.equals(trueStruct)) {
+			expr_ternary.struct = falseStruct;
+		} else {
+			report_error("TrueExpr i FalseExpr moraju biti istog tipa", expr_ternary);
+			expr_ternary.struct = falseStruct;
+		}
+	}
+	
+	@Override
+	public void visit(CondFactNoRelop condFactNoRelop) {
+		condFactNoRelop.struct = condFactNoRelop.getExprNoTernary().getAddopTermList().struct;
+	}
+	
+	@Override
+	public void visit(CondFactRelop condFactRelop) {
+		Struct expr1Struct = condFactRelop.getExprNoTernary().getAddopTermList().struct,
+			expr2Struct = condFactRelop.getExprNoTernary1().getAddopTermList().struct;
+		if (expr1Struct.compatibleWith(expr2Struct)) {
+			condFactRelop.struct = boolType;
+		} else {
+			condFactRelop.struct = Tab.noType;
+		}
 	}
 	
 	//Designator Statements

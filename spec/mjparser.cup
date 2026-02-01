@@ -57,37 +57,42 @@ terminal String IDENT;
 terminal Integer NUMBER, BOOL;
 terminal Character CHARACTER;
 
-nonterminal Program, ProgramName, ConVarEnumDecList, Type, ConDecList, ConDecl, ConDeclMore, Constant, VarDeclList, VarDecl, VarDeclMore;
+nonterminal Program, ProgramName, DeclList, Type, Decl, ConstDecl, ConstList, Constant, ConstAssign, VarDeclList, VarList, VarDecl, Var;
 nonterminal EnumDecl, EnumName, EnumElemList, EnumElem;
 nonterminal MainMethod, MainName, StatementList, Statement, DesignatorStatement;
-nonterminal ExprNoTernary, CondFact, CondTrueExpr, CondFalseExpr;
+nonterminal ExprNoTernary;
 nonterminal Assignop, Addop, Mulop, Relop;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, AddopTermList, MulopFactorList, Factor, FactorSub, Term, Unary;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondFact, AddopTermList, MulopFactorList, Factor, FactorSub, Term, Unary;
 nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator;
 
 
-Program ::= (Program) PROG ProgramName ConVarEnumDecList LBRACE MainMethod RBRACE;
+Program ::= (Program) PROG ProgramName DeclList LBRACE MainMethod RBRACE
+			;
 
-ProgramName ::= (ProgramName) IDENT;
-
-ConVarEnumDecList ::= 	(ConVarEnumDecList_con) ConVarEnumDecList ConDecList
-						|
-						(ConVarEnumDecList_var) ConVarEnumDecList VarDeclList
-						|
-						(ConVarEnumDecList_enu) ConVarEnumDecList EnumDecl
-						|
-						(ConVarEnumDecList_e) /* epsilon */
-						;
-				
-ConDecList ::= (ConDecList) CONST Type ConDecl ConDeclMore SEMI;
-
-ConDecl ::= (ConDecl) IDENT ASSIGN Constant;
-
-ConDeclMore ::= (ConDeclMore_comma) COMMA ConDecl ConDeclMore
-				|
-				(ConDeclMore_e) /* epsilon */
+ProgramName ::=	(ProgramName) IDENT
 				;
+
+DeclList ::= 	(DeclList_list) DeclList Decl
+				|
+				(DeclList_e) /* epsilon */
+				;
+				
+Decl ::=	(Decl_const) ConstDecl
+			|
+			(Decl_var) VarDecl
+			|
+			(Decl_enum) EnumDecl
+			;
+
+ConstDecl ::=	(ConstDecl) CONST Type ConstList SEMI;
+
+ConstList ::=	(ConstList_list) ConstList COMMA ConstAssign
+				|
+				(ConstList_comma) ConstAssign
+				;
+
+ConstAssign ::=	(ConstAssign) IDENT ASSIGN Constant;
 
 Constant ::= 	(Constant_n) NUMBER
 				|
@@ -95,22 +100,22 @@ Constant ::= 	(Constant_n) NUMBER
 				|
 				(Constant_b) BOOL
 				;
-				
-VarDeclList ::= (VarDeclList) Type VarDecl VarDeclMore SEMI ;
 
+VarDecl ::= (VarDecl_var) Type VarList SEMI
+			;
 
-VarDecl ::= (VarDecl_var) IDENT  
+VarList ::= (VarList_list) VarList COMMA Var
 			|
-			(VarDecl_array) IDENT LBRACK RBRACK
-			; 
+			(VarList_var) Var
+			;
 
-
-VarDeclMore ::= (VarDeclMore_comma) COMMA VarDecl VarDeclMore 
-				|
-				(VarDeclMore_e) /* epsilon */
-				; 
+Var ::=	(Var_var) IDENT
+		|
+		(Var_arr) IDENT LBRACK RBRACK
+		;
 				
-EnumDecl ::=	(EnumDecl) ENUM EnumName LBRACE  EnumElemList RBRACE;
+EnumDecl ::=	(EnumDecl) ENUM EnumName LBRACE  EnumElemList RBRACE
+				;
 
 EnumName ::=	(EnumName) IDENT
 				;
@@ -125,11 +130,18 @@ EnumElem ::=	(EnumElemExplicit) IDENT ASSIGN NUMBER
 				(EnumElemImplicit) IDENT
 				;
 
-Type ::= (Type) IDENT;
+Type ::=	(Type) IDENT
+			;
 
-MainMethod ::= (MainMethod) VOID MainName LPAREN RPAREN VarDeclList LBRACE StatementList RBRACE;
+MainMethod ::= (MainMethod) VOID MainName LPAREN RPAREN VarDeclList LBRACE StatementList RBRACE
+				;
 
 MainName ::=	(MainName) MAIN
+				;
+				
+VarDeclList ::=	(VarDeclList_list) VarDeclList VarDecl
+				|
+				(VarDeclList_e) /* epsilon */
 				;
 
 StatementList ::= 	(StatementList_rec) StatementList Statement
@@ -162,7 +174,7 @@ DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						
 Expr ::=	(Expr_noternary) ExprNoTernary
 			|
-			(Expr_ternary) CondFact QUESTION CondTrueExpr COLON CondFalseExpr
+			(Expr_ternary) CondFact QUESTION Expr:trueExpr COLON Expr:falseExpr
 		 	;
 		 	
 ExprNoTernary ::=	(ExprNoTernary) AddopTermList;
@@ -176,10 +188,6 @@ CondFact ::= 	(CondFactNoRelop) ExprNoTernary
              	|
              	(CondFactRelop) ExprNoTernary Relop ExprNoTernary
              	;
-
-CondTrueExpr ::=	(CondTrueExpr) Expr;
-
-CondFalseExpr ::=	(CondFalseExpr) Expr;
 
 Term ::= (Term) MulopFactorList
 		 ;

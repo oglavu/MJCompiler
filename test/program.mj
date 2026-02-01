@@ -1,8 +1,9 @@
 program MJProgram
-	int z[];
+	const int c = 2;
 {
 
-	void main() int a; {
-		print(z.length);
+	void main() bool b; int a; {
+		a = 2*-3+1;
+		a = a != c ? c : 2;
 	}
 }
