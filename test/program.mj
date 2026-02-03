@@ -1,9 +1,21 @@
 program MJProgram
-	const int c = 2;
+
 {
 
-	void main() bool b; int a; {
-		a = 2*-3+1;
-		a = a != c ? c : 2;
+	void main() int niz[], a; {
+		niz = new int[10];
+		niz[0] = 2;
+		niz[a+1]++;
+		niz[2]--;
+		niz[3] = niz[1]*2*-niz[2];
+		
+		a = niz[0];
+		a++;
+		a--;
+		a = -a*4+2+a;
+		
+		print(niz[0]);
+		print(a);
+		return;
 	}
 }

@@ -57,14 +57,14 @@ terminal String IDENT;
 terminal Integer NUMBER, BOOL;
 terminal Character CHARACTER;
 
-nonterminal Program, ProgramName, DeclList, Type, Decl, ConstDecl, ConstList, Constant, ConstAssign, VarDeclList, VarList, VarDecl, Var;
+nonterminal Program, ProgramName, DeclList, Decl, ConstDecl, ConstList, ConstAssign, VarDeclList, VarList, VarDecl, Var;
 nonterminal EnumDecl, EnumName, EnumElemList, EnumElem;
-nonterminal MainMethod, MainName, StatementList, Statement, DesignatorStatement;
+nonterminal MainMethod, StatementList, Statement, DesignatorStatement;
 nonterminal ExprNoTernary;
 nonterminal Assignop, Addop, Mulop, Relop;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondFact, AddopTermList, MulopFactorList, Factor, FactorSub, Term, Unary;
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondFact, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MainName;
 
 
 Program ::= (Program) PROG ProgramName DeclList LBRACE MainMethod RBRACE
@@ -92,13 +92,13 @@ ConstList ::=	(ConstList_list) ConstList COMMA ConstAssign
 				(ConstList_comma) ConstAssign
 				;
 
-ConstAssign ::=	(ConstAssign) IDENT ASSIGN Constant;
+ConstAssign ::=	(ConstAssign) IDENT ASSIGN Literal;
 
-Constant ::= 	(Constant_n) NUMBER
+Literal ::= 	(Literal_n) NUMBER
 				|
-				(Constant_c) CHARACTER
+				(Literal_c) CHARACTER
 				|
-				(Constant_b) BOOL
+				(Literal_b) BOOL
 				;
 
 VarDecl ::= (VarDecl_var) Type VarList SEMI
@@ -207,11 +207,7 @@ Unary ::= 	(Unary_m) MINUS
 
 FactorSub ::= 	(FactorSub_var) Designator
 		   		|
-		   		(FactorSub_n) NUMBER
-		   		|
-		   		(FactorSub_c) CHARACTER
-		   		|
-		   		(FactorSub_b) BOOL
+		   		(FactorSub_l) Literal
 		   		|		   
 		   		(FactorSub_new_array) NEW Type LBRACK Expr RBRACK
 		   		|

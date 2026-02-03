@@ -7,5 +7,6 @@ logs/*
 src/*
 *.class
 *.jar
+*.obj
 
 spec/*_astbuild.cup

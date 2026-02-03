@@ -11,7 +11,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	private boolean errorDetected = false;
 	Logger log = Logger.getLogger(getClass());
-	private int constant, nxtEnumVal;
+	private int constant, nxtEnumVal, nVars;
 	private Struct constantType,
 		currentType,
 		boolType = Tab.find("bool").getType();
@@ -19,6 +19,10 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		mainMethod, 
 		currentProgam;
 	private boolean returnHappend;
+	
+	public int getnVars() {
+		return nVars;
+	}
 
 	/* LOG MESSAGES */
 	public void report_error(String message, SyntaxNode info) {
@@ -63,12 +67,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(MainName mainName) {
-		this.mainMethod = Tab.insert(Obj.Meth, "main", Tab.noType);
+		this.mainMethod = mainName.obj = Tab.insert(Obj.Meth, "main", Tab.noType);
 		Tab.openScope();
 	}
 	
 	@Override
 	public void visit(MainMethod mainMethod) {
+		nVars = Tab.currentScope().getnVars();
 		Tab.chainLocalSymbols(this.mainMethod);
 		Tab.closeScope();
 		
@@ -94,21 +99,21 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(Constant_n constant_n) {
-		constant = constant_n.getN1();
-		constantType = Tab.intType;
+	public void visit(Literal_n literal_n) {
+		constant = literal_n.getN1();
+		constantType = literal_n.struct = Tab.intType;
 	}
 	
 	@Override
-	public void visit(Constant_c constant_c) {
-		constant = constant_c.getC1();
-		constantType = Tab.charType;
+	public void visit(Literal_c literal_c) {
+		constant = literal_c.getC1();
+		constantType = literal_c.struct = Tab.charType;
 	}
 	
 	@Override
-	public void visit(Constant_b constant_b) {
-		constant = constant_b.getB1();
-		constantType = boolType;
+	public void visit(Literal_b literal_b) {
+		constant = literal_b.getB1();
+		constantType = literal_b.struct = boolType;
 	}
 	
 	/* VAR DECLARATIONS */
@@ -149,8 +154,10 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("Neadekvatan tip podatka: " + type.getI1(), type);
 			currentType = Tab.noType;
 		}
-		else
-			currentType = typeObj.getType();
+		else {
+			currentType = typeObj.getType();	
+		}
+		type.struct = currentType;
 	}
 	
 	//Designator
@@ -203,16 +210,23 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(Designator_arr designator_arr) {
 		Obj arrObj = Tab.find(designator_arr.getDesignator().obj.getName());
+		Struct exprStruct = designator_arr.getExpr().struct;
 		if(arrObj == Tab.noObj) {
 			report_error("Pristup nedefinisanoj promenljivi niza: " + designator_arr.getDesignator(), designator_arr);
 			designator_arr.obj = Tab.noObj;
 		}
-		else if(arrObj.getKind() != Obj.Var || arrObj.getType().getKind() != Struct.Array) {
-			report_error("Neadekvatna promenljiva niza: " + designator_arr.getDesignator(), designator_arr);
-			designator_arr.obj = Tab.noObj;
+		else if(arrObj.getType().getKind() == Struct.Array) {
+			if (exprStruct == Tab.noType) {
+				report_error("Neadekvatan indeks niza: " + designator_arr.getDesignator(), designator_arr);
+				designator_arr.obj = Tab.noObj;
+			}
+			else if (exprStruct == Tab.intType) {
+				designator_arr.obj = new Obj(Obj.Elem, arrObj.getName() + ".element", arrObj.getType().getElemType());
+			}
 		}
 		else {
-			designator_arr.obj = arrObj;
+			report_error("Neadekvatna promenljiva niza: " + designator_arr.getDesignator(), designator_arr);
+			designator_arr.obj = Tab.noObj;
 		}
 	}
 	
@@ -274,18 +288,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	//FactorSub
 	@Override
-	public void visit(FactorSub_n factorSub_n) {
-		factorSub_n.struct = Tab.intType;
-	}
-	
-	@Override
-	public void visit(FactorSub_c factorSub_c) {
-		factorSub_c.struct = Tab.charType;
-	}
-	
-	@Override
-	public void visit(FactorSub_b factorSub_b) {
-		factorSub_b.struct = boolType;
+	public void visit(FactorSub_l factorSub_l) {
+		factorSub_l.struct = factorSub_l.getLiteral().struct;
 	}
 	
 	@Override 
