@@ -1,6 +1,7 @@
 package rs.ac.bg.etf.pp1;
 
 import java.util.ArrayList;
+import java.util.Stack;
 
 import rs.ac.bg.etf.pp1.CounterVisitor.VarCounter;
 import rs.ac.bg.etf.pp1.ast.*;
@@ -80,7 +81,6 @@ public class CodeGenerator extends VisitorAdaptor {
 				&& parent.getClass() != FactorSub_var.class
 				// e.g. x = a; a bi se pushovao i kao designator i kao factor
 		){
-			
 			Code.load(d.obj);	
 		}
 	}
@@ -217,13 +217,13 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(Statement_return1 statement_return1) {
+	public void visit(Statement_return1 stmt) {
 		Code.put(Code.exit);
 		Code.put(Code.return_);
 	}
 	
 	@Override
-	public void visit(Statement_return2 statement_return2) {
+	public void visit(Statement_return2 stmt) {
 		Code.put(Code.exit);
 		Code.put(Code.return_);
 	}
@@ -231,6 +231,58 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(DesignatorStatement_assign stmt) {
 		Code.store(stmt.getDesignator().obj);
+	}
+	
+	// Condition
+	private Stack<Integer> ternaryCondFalse = new Stack<Integer>();
+	private Stack<Integer> ternaryEnd = new Stack<Integer>();
+	
+	private int getRelopCode(Relop r) {
+		if (r instanceof Relop_eq)
+			return Code.eq;
+		if (r instanceof Relop_ne)
+			return Code.ne;
+		if (r instanceof Relop_le)
+			return Code.le;
+		if (r instanceof Relop_lt)
+			return Code.lt;
+		if (r instanceof Relop_ge)
+			return Code.ge;
+		if (r instanceof Relop_gt)
+			return Code.gt;
+		return 0;
+	}
+	
+	@Override
+	public void visit(CondFactNoRelop c) {
+		Code.loadConst(1);
+		// to be filled with corresponding ternaryCondFalse value
+		Code.putFalseJump(Code.eq, 0); // -> false
+		// | true
+		// V
+		ternaryCondFalse.push(Code.pc - 2); // adr before jmp
+	}
+	
+	@Override
+	public void visit(CondFactRelop c) {
+		// to be filled with corresponding ternaryCondFalse value
+		Code.putFalseJump(getRelopCode(c.getRelop()), 0); // -> false
+		// | true
+		// V
+		ternaryCondFalse.push(Code.pc - 2); // adr before jmp
+	}
+	
+	@Override
+	public void visit(CondTrueExpr e) {
+		// to be filled with corresponding ternaryEnd value
+		Code.putJump(0);
+		Code.fixup(ternaryCondFalse.pop());
+		ternaryEnd.push(Code.pc - 2);
+	}
+	
+	@Override
+	public void visit(CondFalseExpr e) {
+		Code.fixup(ternaryEnd.pop());
 	}
 	
 }

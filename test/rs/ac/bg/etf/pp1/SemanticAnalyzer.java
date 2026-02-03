@@ -375,8 +375,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	//Ternary
 	public void visit(Expr_ternary expr_ternary) {
-		Struct trueStruct = expr_ternary.getExpr().struct,
-			falseStruct = expr_ternary.getExpr1().struct,
+		Struct trueStruct = expr_ternary.getCondTrueExpr().struct,
+			falseStruct = expr_ternary.getCondFalseExpr().struct,
 			condStruct = expr_ternary.getCondFact().struct;
 		if (!condStruct.equals(boolType)) {
 			report_error("Uslov mora biti bool", expr_ternary);
@@ -393,6 +393,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("TrueExpr i FalseExpr moraju biti istog tipa", expr_ternary);
 			expr_ternary.struct = falseStruct;
 		}
+	}
+	
+	@Override
+	public void visit(CondTrueExpr condTrueExpr) {
+		condTrueExpr.struct = condTrueExpr.getExpr().struct;
+	}
+	
+	@Override
+	public void visit(CondFalseExpr condFalseExpr) {
+		condFalseExpr.struct = condFalseExpr.getExpr().struct;
 	}
 	
 	@Override

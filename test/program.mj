@@ -1,20 +1,12 @@
 program MJProgram
 
+const int c = 1;
+
 {
 
-	void main() int niz[], a; {
-		niz = new int[10];
-		niz[0] = 2;
-		niz[a+1]++;
-		niz[2]--;
-		niz[3] = niz[1]*2*-niz[2];
-		
-		a = niz[0];
-		a++;
-		a--;
-		a = -a*4+2+a;
-		
-		print(niz[0]);
+	void main() int a; bool b; {
+		b = false;
+		a = a==0 ? b ? c+1 : c-1 : c;
 		print(a);
 		return;
 	}

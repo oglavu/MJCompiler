@@ -63,7 +63,7 @@ nonterminal MainMethod, StatementList, Statement, DesignatorStatement;
 nonterminal ExprNoTernary;
 nonterminal Assignop, Addop, Mulop, Relop;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondFact, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, CondFact, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
 nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MainName;
 
 
@@ -174,11 +174,17 @@ DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						
 Expr ::=	(Expr_noternary) ExprNoTernary
 			|
-			(Expr_ternary) CondFact QUESTION Expr:trueExpr COLON Expr:falseExpr
+			(Expr_ternary) CondFact QUESTION CondTrueExpr COLON CondFalseExpr
 		 	;
 		 	
 ExprNoTernary ::=	(ExprNoTernary) AddopTermList;
-		 
+
+CondTrueExpr ::=	(CondTrueExpr) Expr
+					;
+					
+CondFalseExpr ::=	(CondFalseExpr) Expr
+					;
+
 AddopTermList ::= 	(AddopTermList_add) AddopTermList Addop Term
 					|
 					(AddopTermList_term) Term
