@@ -1,13 +1,11 @@
 program MJProgram
 
-const int c = 1;
+int a; 
 
 {
 
-	void main() int a; bool b; {
-		b = false;
-		a = a==0 ? b ? c+1 : c-1 : c;
-		print(a);
+	void main() {
+		read(a);
 		return;
 	}
 }

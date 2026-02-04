@@ -3,6 +3,8 @@ package rs.ac.bg.etf.pp1;
 import java.util.ArrayList;
 import java.util.Stack;
 
+import org.apache.log4j.Logger;
+
 import rs.ac.bg.etf.pp1.CounterVisitor.VarCounter;
 import rs.ac.bg.etf.pp1.ast.*;
 import rs.etf.pp1.mj.runtime.Code;
@@ -16,6 +18,27 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	public int getMainPc() {
 		return mainPc;
+	}
+	
+	/* LOG MESSAGES */
+	private boolean errorDetected = false;
+	Logger log = Logger.getLogger(getClass());
+	
+	public void report_error(String message, SyntaxNode info) {
+		errorDetected  = true;
+		StringBuilder msg = new StringBuilder(message);
+		int line = (info == null) ? 0: info.getLine();
+		if (line != 0)
+			msg.append (" na liniji ").append(line);
+		log.error(msg.toString());
+	}
+
+	public void report_info(String message, SyntaxNode info) {
+		StringBuilder msg = new StringBuilder(message); 
+		int line = (info == null) ? 0: info.getLine();
+		if (line != 0)
+			msg.append (" na liniji ").append(line);
+		log.info(msg.toString());
 	}
 	
 	public CodeGenerator() {
@@ -78,16 +101,15 @@ public class CodeGenerator extends VisitorAdaptor {
 		SyntaxNode parent = d.getParent();
 		if (parent.getClass() != DesignatorStatement_assign.class
 				// e.g. arr = new int[10]; Sluzi da se levi arr ne pushuje
+				&& parent.getClass() != Statement_read.class
+				
 				&& parent.getClass() != FactorSub_var.class
 				// e.g. x = a; a bi se pushovao i kao designator i kao factor
+				&& parent.getClass() != Designator_dot.class
+				// e.g. x = EnumName.ELEM; pokusao bi load od EnumName
 		){
 			Code.load(d.obj);	
 		}
-	}
-	
-	@Override
-	public void visit(Designator_dot d) {
-		Code.loadConst(d.obj.getAdr());	// enum
 	}
 	
 	@Override
