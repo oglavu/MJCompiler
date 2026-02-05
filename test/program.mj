@@ -4,10 +4,16 @@ program MJProgram
 
 	void main() int i, j; bool b; {
 		
-		for (i=0; i<2; i++) {
-			print(i);
-			for (j=5; j>3; j--) 
+		b = true;
+		for (i=0; i<10; i++) {
+			
+			if (i==5) break;
+			for (j=10; j>5; j--) {
+				if (j == 7) continue;
 				print(j);
+			}
+			if (i%2==0) continue;
+			print(i);
 		}
 		return;
 	}

@@ -347,11 +347,13 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	// For loop
-	private int for_cond; // where ForCond starts
-	private Stack<Integer> forLoop = new Stack<Integer>();
+	private int for_cond;	// ForCond start
+	private Stack<Integer> endFor = new Stack<Integer>(), // to patch with for_end address
+			stepFor = new Stack<Integer>(); // ForStep start
 	
 	@Override
 	public void visit(ForInitStatement forInitStatement) {
+		endFor.push(-1); // granicnik
 		this.for_cond = Code.pc;
 	}
 	
@@ -361,9 +363,8 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.putFalseJump(Code.eq, 0); // -> for_end
 		Code.putJump(0); // -> for_body
 		
-		forLoop.push(Code.pc - 5);	// 1: patch
-		forLoop.push(Code.pc);		// 2: jump
-		forLoop.push(Code.pc - 2);	// 3: patch
+		stepFor.push(Code.pc);
+		endFor.push(Code.pc - 5);
 	}
 	
 	@Override
@@ -371,22 +372,36 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.putFalseJump(this.getRelopCode(forCond.getRelop()), 0); // -> for_end
 		Code.putJump(0); // -> for_body
 		
-		forLoop.push(Code.pc - 5);	// 1: patch
-		forLoop.push(Code.pc);		// 2: jump
-		forLoop.push(Code.pc - 2);	// 3: patch
+		stepFor.push(Code.pc);
+		endFor.push(Code.pc - 5);
 	}
 	
 	@Override
 	public void visit(ForStepStatement forStepStatement) {
 		Code.putJump(for_cond); // -> ForCond
-		Code.fixup(forLoop.pop());	// 3
+		Code.fixup(stepFor.peek() - 2);
 	}
 	
 	@Override
 	public void visit(ForBodyStatement forBodyStatement) {
-		
-		Code.putJump(forLoop.pop());// 2
-		Code.fixup(forLoop.pop());  // 1
+		int stepStart = stepFor.pop();
+		Code.putJump(stepStart);
+
+		while(!endFor.isEmpty() && endFor.peek() != -1) {
+			Code.fixup(endFor.pop());
+		}
+		endFor.pop(); // izbaci granicnik
+	}
+	
+	@Override
+	public void visit(Statement_continue statement_continue) {
+		Code.putJump(stepFor.peek());
+	}
+	
+	@Override
+	public void visit(Statement_break statement_break) {
+		Code.putJump(0);
+		endFor.push(Code.pc - 2);
 	}
 	
 }

@@ -569,13 +569,17 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 	
+	private int for_depth = 0;
+	
 	@Override
 	public void visit(ForCondNoRelop forCondNoRelop) {
+		this.for_depth++;
 		forCondNoRelop.struct = forCondNoRelop.getExprNoTernary().getAddopTermList().struct;
 	}
 	
 	@Override
 	public void visit(ForCondRelop forCondRelop) {
+		this.for_depth++;
 		Struct expr1Struct = forCondRelop.getExprNoTernary().getAddopTermList().struct,
 			expr2Struct = forCondRelop.getExprNoTernary1().getAddopTermList().struct;
 		if (expr1Struct.compatibleWith(expr2Struct)) {
@@ -663,6 +667,25 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(Statement_if statement_if) {
 		if (statement_if.getCondFact().struct == Tab.noType) {
 			report_error("Uslov IFa je neadekvatnog tipa.", statement_if);
+		}
+	}
+	
+	@Override
+	public void visit(Statement_for statement_for) {
+		this.for_depth--;
+	}
+	
+	@Override
+	public void visit(Statement_continue statement_continue) {
+		if (this.for_depth == 0) {
+			report_error("Continue statement izvan for petlje.", statement_continue);
+		}
+	}
+	
+	@Override
+	public void visit(Statement_break statement_break) {
+		if (this.for_depth == 0) {
+			report_error("Break statement izvan for petlje.", statement_break);
 		}
 	}
 	

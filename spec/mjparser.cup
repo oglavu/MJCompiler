@@ -49,7 +49,7 @@ scan with {:
 	return s;
 :}
 
-terminal PROG, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW, IF, ELSE, FOR;
+terminal PROG, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW, IF, ELSE, FOR, CONTINUE, BREAK;
 terminal INC, PLUS, MUL, DIV, MOD, MINUS, DEC, ASSIGN, COLON, SEMI, COMMA, DOT, QUESTION;
 terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
 terminal RELOP_EQ, RELOP_NEQ, RELOP_GT, RELOP_GE, RELOP_LT, RELOP_LE;
@@ -183,6 +183,10 @@ Statement ::=	(Statement_ds) DesignatorStatement SEMI
 				(Statement_if) IF LPAREN CondFact RPAREN StatementThen Else
 				|
 				(Statement_for) FOR LPAREN ForInitStatement SEMI ForCond SEMI ForStepStatement RPAREN ForBodyStatement
+				|
+				(Statement_continue) CONTINUE SEMI
+				|
+				(Statement_break) BREAK SEMI
 				|
 				(Statement_block) StatementBlock
 				|
