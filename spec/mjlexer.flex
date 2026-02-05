@@ -50,6 +50,8 @@ import java_cup.runtime.Symbol;
 "for" 		{ return new_symbol(sym.FOR, yytext()); }
 "continue" 	{ return new_symbol(sym.CONTINUE, yytext()); }
 "break" 	{ return new_symbol(sym.BREAK, yytext()); }
+"switch" 	{ return new_symbol(sym.SWITCH, yytext()); }
+"case"	 	{ return new_symbol(sym.CASE, yytext()); }
 
 "++" 		{ return new_symbol(sym.INC, yytext()); }
 "+" 		{ return new_symbol(sym.PLUS, yytext()); }

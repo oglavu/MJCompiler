@@ -380,6 +380,8 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(ForStepStatement forStepStatement) {
 		Code.putJump(for_cond); // -> ForCond
 		Code.fixup(stepFor.peek() - 2);
+		
+		sofBreak.push(0);
 	}
 	
 	@Override
@@ -391,6 +393,8 @@ public class CodeGenerator extends VisitorAdaptor {
 			Code.fixup(endFor.pop());
 		}
 		endFor.pop(); // izbaci granicnik
+		
+		sofBreak.pop();
 	}
 	
 	@Override
@@ -400,8 +404,60 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(Statement_break statement_break) {
-		Code.putJump(0);
-		endFor.push(Code.pc - 2);
+		if (sofBreak.peek() == 0) {
+			Code.putJump(0);
+			endFor.push(Code.pc - 2);
+		} else if (sofBreak.peek() == 1) {
+			Code.putJump(0);
+			endSwitch.push(Code.pc-2);
+		}
+
+	}
+	
+	// Switch
+	private Stack<Obj> switchTemp = new Stack<Obj>();
+	private Stack<Integer> skipSwitchCase = new Stack<Integer> (),
+			skipSwitchStmt = new Stack<Integer> (),
+			endSwitch = new Stack<Integer> (),
+			sofBreak = new Stack<Integer> (); // 0: for; 1: switch
+	
+	@Override 
+	public void visit(SwitchExpr switchExpr) {
+		Obj obj = new Obj(Obj.Var, "switchExpr", Tab.intType);
+		switchTemp.push(obj);
+		Code.store(obj);
+		
+		sofBreak.push(1);
+	}
+	
+	@Override
+	public void visit(CaseNum caseNum) {
+		Code.load(switchTemp.peek());
+		Code.loadConst(caseNum.getN1());
+		Code.putFalseJump(Code.eq, 0); // -> to next case
+		// | do the statement
+		// V
+		skipSwitchStmt.push(Code.pc - 2);
+		if (!skipSwitchCase.isEmpty())
+			Code.fixup(skipSwitchCase.pop());
+	}
+	
+	@Override
+	public void visit(CaseDecl caseDecl) {
+		Code.putJump(0); // -> skip condition check & go straight to statements
+		Code.fixup(skipSwitchStmt.pop());
+		skipSwitchCase.push(Code.pc - 2);
+	}
+	
+	@Override
+	public void visit(Statement_switch statement_switch) {
+		sofBreak.pop();
+		switchTemp.pop();
+		
+		if (!skipSwitchCase.isEmpty())
+			Code.fixup(skipSwitchCase.pop());
+		while (!endSwitch.isEmpty())
+			Code.fixup(endSwitch.pop());
 	}
 	
 }

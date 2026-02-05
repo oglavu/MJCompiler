@@ -49,7 +49,7 @@ scan with {:
 	return s;
 :}
 
-terminal PROG, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW, IF, ELSE, FOR, CONTINUE, BREAK;
+terminal PROG, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW, IF, ELSE, FOR, CONTINUE, BREAK, SWITCH, CASE;
 terminal INC, PLUS, MUL, DIV, MOD, MINUS, DEC, ASSIGN, COLON, SEMI, COMMA, DOT, QUESTION;
 terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
 terminal RELOP_EQ, RELOP_NEQ, RELOP_GT, RELOP_GE, RELOP_LT, RELOP_LE;
@@ -62,6 +62,7 @@ nonterminal EnumDecl, EnumName, EnumElemList, EnumElem;
 nonterminal MethodRet, MethodList, MethodDecl, FormParamList, FormParam, ActParam, ActParamList;
 nonterminal StatementList, Statement, StatementBlock, DesignatorStatement;
 nonterminal ExprNoTernary;
+nonterminal SwitchExpr, CaseDeclList, CaseDecl, CaseNum;
 nonterminal ForInitStatement, ForStepStatement, ForBodyStatement;
 nonterminal Else, StatementThen, StatementElse;
 nonterminal Assignop, Addop, Mulop, Relop;
@@ -188,6 +189,8 @@ Statement ::=	(Statement_ds) DesignatorStatement SEMI
 				|
 				(Statement_break) BREAK SEMI
 				|
+				(Statement_switch) SWITCH LPAREN SwitchExpr RPAREN LBRACE CaseDeclList RBRACE
+				|
 				(Statement_block) StatementBlock
 				|
 				(Statement_return1) RETURN SEMI
@@ -200,7 +203,21 @@ Statement ::=	(Statement_ds) DesignatorStatement SEMI
 			  	|
 				(Statement_print2) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
 		  		;
-		  		
+
+SwitchExpr ::=	(SwitchExpr) Expr
+				;
+				
+CaseDeclList ::=	(CaseDeclList_list) CaseDecl CaseDeclList
+					|
+					(CaseDeclList_e) /* epsilon */
+					;
+				
+CaseDecl ::=	(CaseDecl) CASE CaseNum COLON StatementList
+				;
+				
+CaseNum ::=	(CaseNum) NUMBER
+			;
+		
 Else ::=	(Else_yes) ELSE StatementElse
 			|
 			(Else_no) /* epsilon */

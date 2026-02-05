@@ -1,5 +1,6 @@
 package rs.ac.bg.etf.pp1;
 
+import java.util.ArrayList;
 import java.util.Stack;
 
 import org.apache.log4j.Logger;
@@ -630,36 +631,36 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	// Statement
 	@Override
-	public void visit(Statement_read singleStatement_read) {
-		int kind = singleStatement_read.getDesignator().obj.getKind();
-		Struct type = singleStatement_read.getDesignator().obj.getType();
+	public void visit(Statement_read statement_read) {
+		int kind = statement_read.getDesignator().obj.getKind();
+		Struct type = statement_read.getDesignator().obj.getType();
 		if(kind != Obj.Var && kind != Obj.Elem && kind != Obj.Fld)
-			report_error("Read operacija neadekvatne promenljive: " + singleStatement_read.getDesignator().obj.getName(), singleStatement_read);
+			report_error("Read operacija neadekvatne promenljive: " + statement_read.getDesignator().obj.getName(), statement_read);
 		else if(!type.equals(Tab.intType) && !type.equals(Tab.charType) && !type.equals(boolType))
-			report_error("Read operacija ne int/char/bool promenljive: " + singleStatement_read.getDesignator().obj.getName(), singleStatement_read);
+			report_error("Read operacija ne int/char/bool promenljive: " + statement_read.getDesignator().obj.getName(), statement_read);
 	}
 	
 	@Override
-	public void visit(Statement_print1 singleStatement_print1) {
-		Struct type = singleStatement_print1.getExpr().struct;
+	public void visit(Statement_print1 statement_print1) {
+		Struct type = statement_print1.getExpr().struct;
 		if(!type.equals(Tab.intType) && !type.equals(Tab.charType) && !type.equals(boolType))
-			report_error("Print operacija ne int/char/bool izraza", singleStatement_print1);
+			report_error("Print operacija ne int/char/bool izraza", statement_print1);
 	}
 	
 	@Override
-	public void visit(Statement_print2 singleStatement_print2) {
-		Struct type = singleStatement_print2.getExpr().struct;
+	public void visit(Statement_print2 statement_print2) {
+		Struct type = statement_print2.getExpr().struct;
 		if(!type.equals(Tab.intType) && !type.equals(Tab.charType) && !type.equals(boolType))
-			report_error("Print operacija ne int/char/bool izraza", singleStatement_print2);
+			report_error("Print operacija ne int/char/bool izraza", statement_print2);
 	}
 	
 	@Override
-	public void visit(Statement_return1 singleStatement_return1) {
+	public void visit(Statement_return1 statement_return1) {
 		returnHappend = true;
 	}
 	
 	@Override
-	public void visit(Statement_return2 singleStatement_return2) {
+	public void visit(Statement_return2 statement_return2) {
 		returnHappend = true;
 	}
 	
@@ -684,8 +685,35 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(Statement_break statement_break) {
-		if (this.for_depth == 0) {
-			report_error("Break statement izvan for petlje.", statement_break);
+		if (this.for_depth == 0 && this.switch_depth == 0) {
+			report_error("Break statement izvan for/switch.", statement_break);
+		}
+	}
+	
+	int switch_depth = 0;
+	Stack<ArrayList<Integer>> cases = new Stack<ArrayList<Integer>>();
+	
+	@Override
+	public void visit(Statement_switch statement_switch) {
+		this.switch_depth--;
+		cases.pop();
+	}
+	
+	@Override
+	public void visit(SwitchExpr switchExpr) {
+		this.switch_depth++;
+		if (switchExpr.getExpr().struct != Tab.intType) {
+			report_error("Tip u switch naredbi mora biti int", switchExpr);
+		}
+		cases.push(new ArrayList<Integer>());
+	}
+	
+	@Override
+	public void visit(CaseNum caseNum) {
+		if (cases.peek().contains(caseNum.getN1())) {
+			report_error("Visestruka definicija za case " + caseNum.getN1(), caseNum);
+		} else {
+			cases.peek().add(caseNum.getN1());
 		}
 	}
 	

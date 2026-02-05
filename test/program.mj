@@ -4,16 +4,21 @@ program MJProgram
 
 	void main() int i, j; bool b; {
 		
-		b = true;
-		for (i=0; i<10; i++) {
-			
-			if (i==5) break;
-			for (j=10; j>5; j--) {
-				if (j == 7) continue;
-				print(j);
-			}
-			if (i%2==0) continue;
-			print(i);
+		switch (i) {
+			case 0:
+				print('5');
+				switch (2) {
+					case 0:
+						print(0);
+					case 2:
+						print(2);
+				}
+			case 2:
+				print('2');
+				break;
+			case 1:
+				print('1');
+				break;
 		}
 		return;
 	}
