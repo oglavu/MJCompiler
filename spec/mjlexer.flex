@@ -45,6 +45,8 @@ import java_cup.runtime.Symbol;
 "return" 	{ return new_symbol(sym.RETURN, yytext()); }
 "void" 		{ return new_symbol(sym.VOID, yytext()); }
 "new" 		{ return new_symbol(sym.NEW, yytext()); }
+"if" 		{ return new_symbol(sym.IF, yytext()); }
+"else" 		{ return new_symbol(sym.ELSE, yytext()); }
 
 "++" 		{ return new_symbol(sym.INC, yytext()); }
 "+" 		{ return new_symbol(sym.PLUS, yytext()); }

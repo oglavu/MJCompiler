@@ -49,7 +49,7 @@ scan with {:
 	return s;
 :}
 
-terminal PROG, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW;
+terminal PROG, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW, IF, ELSE;
 terminal INC, PLUS, MUL, DIV, MOD, MINUS, DEC, ASSIGN, COLON, SEMI, COMMA, DOT, QUESTION;
 terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
 terminal RELOP_EQ, RELOP_NEQ, RELOP_GT, RELOP_GE, RELOP_LT, RELOP_LE;
@@ -60,13 +60,15 @@ terminal Character CHARACTER;
 nonterminal Program, ProgramName, DeclList, Decl, ConstDecl, ConstList, ConstAssign, VarDeclList, VarList, VarDecl, Var;
 nonterminal EnumDecl, EnumName, EnumElemList, EnumElem;
 nonterminal MethodRet, MethodList, MethodDecl, FormParamList, FormParam, ActParam, ActParamList;
-nonterminal StatementList, Statement, DesignatorStatement;
+nonterminal StatementList, Statement, StatementBlock, DesignatorStatement;
 nonterminal ExprNoTernary;
+nonterminal Else, StatementThen, StatementElse;
 nonterminal Assignop, Addop, Mulop, Relop;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, CondFact, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
 nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MethodName, MethodInvokeName;
 
+precedence left ELSE;
 
 Program ::= (Program) PROG ProgramName DeclList LBRACE MethodList RBRACE
 			;
@@ -144,7 +146,7 @@ MethodList ::=	(MethodList_list) MethodList MethodDecl
 				(MethodList_e) /* epsilon */
 				;
 				
-MethodDecl ::=	(MethodDecl) MethodRet MethodName LPAREN FormParamList RPAREN VarDeclList LBRACE StatementList RBRACE
+MethodDecl ::=	(MethodDecl) MethodRet MethodName LPAREN FormParamList RPAREN VarDeclList StatementBlock
 				;
 				
 MethodRet ::=	(MethodRet_type) Type
@@ -171,8 +173,15 @@ StatementList ::= 	(StatementList_rec) StatementList Statement
 				   	|										   
 				  	(StatementList_e) /* epsilon */
 				   	;
+				   	
+StatementBlock ::=	(StatementBlock) LBRACE StatementList RBRACE
+					;
 
 Statement ::=	(Statement_ds) DesignatorStatement SEMI
+				|
+				(Statement_if) IF LPAREN CondFact RPAREN StatementThen Else
+				|
+				(Statement_block) StatementBlock
 				|
 				(Statement_return1) RETURN SEMI
 		  		|
@@ -184,6 +193,17 @@ Statement ::=	(Statement_ds) DesignatorStatement SEMI
 			  	|
 				(Statement_print2) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
 		  		;
+		  		
+Else ::=	(Else_yes) ELSE StatementElse
+			|
+			(Else_no) /* epsilon */
+			;
+			
+StatementThen ::=	(StatementThen) Statement
+					;
+					
+StatementElse ::=	(StatementElse) Statement
+					;
 			     		
 DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						|

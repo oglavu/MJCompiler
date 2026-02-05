@@ -312,13 +312,37 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(CondTrueExpr e) {
 		// to be filled with corresponding ternaryEnd value
-		Code.putJump(0);
+		Code.putJump(0); // -> end of ternary
+		// | condFalseExpr code
+		// V
 		Code.fixup(ternaryCondFalse.pop());
 		ternaryEnd.push(Code.pc - 2);
 	}
 	
 	@Override
 	public void visit(CondFalseExpr e) {
+		Code.fixup(ternaryEnd.pop());
+	}
+	
+	@Override
+	public void visit(StatementThen s) {
+		Statement_if parent = (Statement_if) s.getParent();
+		if (parent.getElse() instanceof Else_yes) {
+			// to be filled with corresponding ternaryEnd value
+			Code.putJump(0); // -> end of ternary
+			// | condFalseExpr code
+			// V
+			Code.fixup(ternaryCondFalse.pop());
+			ternaryEnd.push(Code.pc - 2);
+		} else {
+			// no else statement
+			Code.fixup(ternaryCondFalse.pop());
+		}
+
+	}
+	
+	@Override
+	public void visit(StatementElse e) {
 		Code.fixup(ternaryEnd.pop());
 	}
 	

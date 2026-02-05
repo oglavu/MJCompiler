@@ -1,10 +1,35 @@
 program MJProgram 
 
 {
-	int c(char a, int b[]) {return 1;}
 
-	void main() int i[]; char ch; {
-		c(ch, i);
+	void main() bool b; {
+		
+		b = true;
+		
+		if (b) {
+			print('t');
+		} else
+			print('e');
+		
+		
+		b = false;	
+		if (b)
+			print('t');
+		else {
+			print('e');
+		}
+		{}	
+		b = true;
+		if (b)
+			print('t');
+		print('f');
+		
+		
+		b = true;
+		if (b == false)
+			print('t');
+		print('f');
+		
 		
 		return;
 	}

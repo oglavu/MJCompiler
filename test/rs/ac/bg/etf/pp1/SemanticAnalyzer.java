@@ -608,6 +608,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 	
+	// Statement
 	@Override
 	public void visit(Statement_read singleStatement_read) {
 		int kind = singleStatement_read.getDesignator().obj.getKind();
@@ -640,6 +641,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(Statement_return2 singleStatement_return2) {
 		returnHappend = true;
+	}
+	
+	@Override
+	public void visit(Statement_if statement_if) {
+		if (statement_if.getCondFact().struct == Tab.noType) {
+			report_error("Uslov IFa je neadekvatnog tipa.", statement_if);
+		}
 	}
 	
 	
