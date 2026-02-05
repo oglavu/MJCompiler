@@ -346,4 +346,47 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.fixup(ternaryEnd.pop());
 	}
 	
+	// For loop
+	private int for_cond; // where ForCond starts
+	private Stack<Integer> forLoop = new Stack<Integer>();
+	
+	@Override
+	public void visit(ForInitStatement forInitStatement) {
+		this.for_cond = Code.pc;
+	}
+	
+	@Override
+	public void visit(ForCondNoRelop forCondNoRelop) {
+		Code.loadConst(1);
+		Code.putFalseJump(Code.eq, 0); // -> for_end
+		Code.putJump(0); // -> for_body
+		
+		forLoop.push(Code.pc - 5);	// 1: patch
+		forLoop.push(Code.pc);		// 2: jump
+		forLoop.push(Code.pc - 2);	// 3: patch
+	}
+	
+	@Override
+	public void visit(ForCondRelop forCond) {
+		Code.putFalseJump(this.getRelopCode(forCond.getRelop()), 0); // -> for_end
+		Code.putJump(0); // -> for_body
+		
+		forLoop.push(Code.pc - 5);	// 1: patch
+		forLoop.push(Code.pc);		// 2: jump
+		forLoop.push(Code.pc - 2);	// 3: patch
+	}
+	
+	@Override
+	public void visit(ForStepStatement forStepStatement) {
+		Code.putJump(for_cond); // -> ForCond
+		Code.fixup(forLoop.pop());	// 3
+	}
+	
+	@Override
+	public void visit(ForBodyStatement forBodyStatement) {
+		
+		Code.putJump(forLoop.pop());// 2
+		Code.fixup(forLoop.pop());  // 1
+	}
+	
 }

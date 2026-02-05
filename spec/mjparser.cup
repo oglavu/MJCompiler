@@ -49,7 +49,7 @@ scan with {:
 	return s;
 :}
 
-terminal PROG, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW, IF, ELSE;
+terminal PROG, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW, IF, ELSE, FOR;
 terminal INC, PLUS, MUL, DIV, MOD, MINUS, DEC, ASSIGN, COLON, SEMI, COMMA, DOT, QUESTION;
 terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
 terminal RELOP_EQ, RELOP_NEQ, RELOP_GT, RELOP_GE, RELOP_LT, RELOP_LE;
@@ -62,10 +62,11 @@ nonterminal EnumDecl, EnumName, EnumElemList, EnumElem;
 nonterminal MethodRet, MethodList, MethodDecl, FormParamList, FormParam, ActParam, ActParamList;
 nonterminal StatementList, Statement, StatementBlock, DesignatorStatement;
 nonterminal ExprNoTernary;
+nonterminal ForInitStatement, ForStepStatement, ForBodyStatement;
 nonterminal Else, StatementThen, StatementElse;
 nonterminal Assignop, Addop, Mulop, Relop;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, CondFact, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, CondFact, ForCond, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
 nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MethodName, MethodInvokeName;
 
 precedence left ELSE;
@@ -181,6 +182,8 @@ Statement ::=	(Statement_ds) DesignatorStatement SEMI
 				|
 				(Statement_if) IF LPAREN CondFact RPAREN StatementThen Else
 				|
+				(Statement_for) FOR LPAREN ForInitStatement SEMI ForCond SEMI ForStepStatement RPAREN ForBodyStatement
+				|
 				(Statement_block) StatementBlock
 				|
 				(Statement_return1) RETURN SEMI
@@ -204,7 +207,21 @@ StatementThen ::=	(StatementThen) Statement
 					
 StatementElse ::=	(StatementElse) Statement
 					;
+					
+ForInitStatement ::=	(ForInitStatement) DesignatorStatement
+						;
 			     		
+ForCond ::= 	(ForCondNoRelop) ExprNoTernary
+             	|
+             	(ForCondRelop) ExprNoTernary Relop ExprNoTernary
+             	;
+             	
+ForStepStatement ::=	(ForStepStatement) DesignatorStatement
+						;
+						
+ForBodyStatement ::=	(ForBodyStatement) Statement
+						;
+             	
 DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						|
 						(DesignatorStatement_meth) MethodInvokeName LPAREN ActParamList RPAREN

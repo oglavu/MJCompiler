@@ -2,35 +2,13 @@ program MJProgram
 
 {
 
-	void main() bool b; {
+	void main() int i, j; bool b; {
 		
-		b = true;
-		
-		if (b) {
-			print('t');
-		} else
-			print('e');
-		
-		
-		b = false;	
-		if (b)
-			print('t');
-		else {
-			print('e');
+		for (i=0; i<2; i++) {
+			print(i);
+			for (j=5; j>3; j--) 
+				print(j);
 		}
-		{}	
-		b = true;
-		if (b)
-			print('t');
-		print('f');
-		
-		
-		b = true;
-		if (b == false)
-			print('t');
-		print('f');
-		
-		
 		return;
 	}
 }

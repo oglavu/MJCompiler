@@ -569,6 +569,22 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 	
+	@Override
+	public void visit(ForCondNoRelop forCondNoRelop) {
+		forCondNoRelop.struct = forCondNoRelop.getExprNoTernary().getAddopTermList().struct;
+	}
+	
+	@Override
+	public void visit(ForCondRelop forCondRelop) {
+		Struct expr1Struct = forCondRelop.getExprNoTernary().getAddopTermList().struct,
+			expr2Struct = forCondRelop.getExprNoTernary1().getAddopTermList().struct;
+		if (expr1Struct.compatibleWith(expr2Struct)) {
+			forCondRelop.struct = boolType;
+		} else {
+			forCondRelop.struct = Tab.noType;
+		}
+	}
+	
 	//Designator Statements
 	@Override
 	public void visit(DesignatorStatement_assign designatorStatement_assign) {
