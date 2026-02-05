@@ -1,5 +1,7 @@
 package rs.ac.bg.etf.pp1;
 
+import java.util.Stack;
+
 import org.apache.log4j.Logger;
 
 import rs.ac.bg.etf.pp1.ast.*;
@@ -11,12 +13,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	private boolean errorDetected = false;
 	Logger log = Logger.getLogger(getClass());
-	private int constant, nxtEnumVal, nVars;
+	private int constant, nxtEnumVal, nVars, formParamCnt;
 	private Struct constantType,
 		currentType,
 		boolType = Tab.find("bool").getType();
 	private Obj currentEnum,
 		mainMethod, 
+		currentMethod,
 		currentProgam;
 	private boolean returnHappend;
 	
@@ -66,18 +69,122 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(MainName mainName) {
-		this.mainMethod = mainName.obj = Tab.insert(Obj.Meth, "main", Tab.noType);
+	public void visit(MethodName methodName) {
+		methodName.obj = Tab.insert(Obj.Meth, methodName.getI1() , currentType);
+		if (methodName.getI1().equals("main")) {
+			if (currentType != Tab.noType) {
+				currentMethod = methodName.obj = Tab.noObj;
+				report_error("Main metoda mora imati povratni tip void.", methodName);
+			} else {
+				mainMethod = methodName.obj;
+			}
+		}
+		currentMethod = methodName.obj;
 		Tab.openScope();
 	}
 	
 	@Override
-	public void visit(MainMethod mainMethod) {
+	public void visit(FormParam_var formParam_var) {
+		
+		if (currentMethod == Tab.noObj) {
+			report_error("Formalan parametar neadekavatnog metoda: " + formParam_var.getI2(), formParam_var);
+			return;
+		}
+		
+		Obj varObj = Tab.currentScope().findSymbol(formParam_var.getI2());
+		
+		if(varObj == null || varObj == Tab.noObj) {
+			varObj = Tab.insert(Obj.Var, formParam_var.getI2(), currentType);
+			varObj.setFpPos(++this.formParamCnt);
+			currentMethod.setLevel(currentMethod.getLevel()+1);
+		}
+		else{
+			report_error("Dvostruka definicija formalnog parametra: " + formParam_var.getI2(), formParam_var);
+		}
+	}
+	
+	@Override
+	public void visit(FormParam_arr formParam_arr) {
+		if (currentMethod == Tab.noObj) {
+			report_error("Formalan parametar neadekavatnog metoda: " + formParam_arr.getI2(), formParam_arr);
+			return;
+		}
+		
+		Obj varObj = Tab.currentScope().findSymbol(formParam_arr.getI2());
+		
+		if(varObj == null || varObj == Tab.noObj) {
+			varObj = Tab.insert(Obj.Var, formParam_arr.getI2(), new Struct(Struct.Array, currentType));
+			varObj.setFpPos(++this.formParamCnt);
+			currentMethod.setLevel(currentMethod.getLevel()+1);
+		}
+		else{
+			report_error("Dvostruka definicija formalnog parametra: " + formParam_arr.getI2(), formParam_arr);
+		}
+	}
+	
+	@Override
+	public void visit(MethodDecl methodDecl) {
 		nVars = Tab.currentScope().getnVars();
-		Tab.chainLocalSymbols(this.mainMethod);
+		Tab.chainLocalSymbols(currentMethod);
 		Tab.closeScope();
 		
+		// TODO: Proveriti da li se dogadja return za svaki moguci slucaj
 		returnHappend = false;
+		formParamCnt = 0;
+	}
+	
+	private class Pair {
+		public Obj obj;
+		public int fp_ix;
+		
+		Pair(Obj o, int i) {
+			this.obj = o;
+			this.fp_ix = i;
+		}
+	}
+	
+	Stack<Pair> methodCalls = new Stack<Pair>();
+	
+	@Override
+	public void visit(MethodInvokeName methodInvokeName) {
+		Obj obj = Tab.find(methodInvokeName.getI1());
+		if (obj == null || obj == Tab.noObj) {
+			report_error("Poziv nedefinisane metode: "+methodInvokeName.getI1(), methodInvokeName);
+		}
+		methodInvokeName.obj = obj;
+		methodCalls.push(new Pair(obj, 1)); // fp krecu od 1
+	}
+	
+	@Override
+	public void visit(ActParam actParam) {
+		if (methodCalls.empty()) {
+			report_error("Nerazresen problem sa imenom metode", actParam);
+			return;
+		}
+		
+		Struct apStruct = actParam.getExpr().struct;
+		Pair method = methodCalls.peek();
+		
+		if (apStruct == Tab.noType) {
+			report_error("Neadekvatan tip stvarnog parametra na poziciji " + method.fp_ix, actParam);
+		} else {
+			for (Obj fp : method.obj.getLocalSymbols()) {
+				if (fp.getFpPos() == method.fp_ix) {
+					if (fp.getType().getKind() == apStruct.getKind()) {
+						if (apStruct.getKind() == Struct.Array && apStruct.getElemType() != fp.getType().getElemType()) {
+							report_error("Neadekvatan tip elemenata niza stvarnog parametra " + fp.getName() + " metode " + method.obj.getName(), actParam);
+						}
+					}
+					else {
+						report_info("got:" + apStruct.getKind() + ", expected " +fp.getType().getKind(),null);
+						report_error("Neadekvatan tip stvarnog parametra " + fp.getName() + " metode " + method.obj.getName(), actParam);
+					}
+					method.fp_ix++;
+					break;
+				}
+			}
+		}
+		
 	}
 	
 	/* CONST DECLARATIONS */
@@ -158,6 +265,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			currentType = typeObj.getType();	
 		}
 		type.struct = currentType;
+	}
+	
+	@Override
+	public void visit(MethodRet_void methodRet_void) {
+		currentType = Tab.noType;
 	}
 	
 	//Designator
@@ -296,6 +408,30 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		factorSub_l.struct = factorSub_l.getLiteral().struct;
 	}
 	
+	@Override
+	public void visit(FactorSub_meth factorSub_meth) {
+		if(factorSub_meth.getMethodInvokeName().obj.getKind() != Obj.Meth) {
+			report_error("Ime " + factorSub_meth.getMethodInvokeName().getI1() + " nije naziv metode.", factorSub_meth);
+			factorSub_meth.struct = Tab.noType;
+		} 
+		else if (methodCalls.isEmpty()) {
+			report_error("Nedefinisana greska sa imenom metode: " + factorSub_meth.getMethodInvokeName().obj.getName(), factorSub_meth);
+			factorSub_meth.struct = Tab.noType;
+		} 
+		else {
+			Pair method = methodCalls.pop();
+			int fp_ix = method.fp_ix > 0 ? method.fp_ix-1 : 0;
+			if (fp_ix > method.obj.getLevel()
+				|| fp_ix < method.obj.getLevel()
+			) {
+				report_error("Broj stvarnih parametara (" + fp_ix + ") razlicit od ocekivanog (" + method.obj.getLevel() + ").", factorSub_meth);
+				factorSub_meth.struct = Tab.noType;
+			}
+			else {
+				factorSub_meth.struct = factorSub_meth.getMethodInvokeName().obj.getType();
+			}
+		}
+	}
 	@Override 
 	public void visit(FactorSub_var factorSub_var) {
 		Obj designatorObj = factorSub_var.getDesignator().obj;
@@ -375,8 +511,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				&& right.equals(Tab.intType) || left.getKind() == Struct.Enum)
 			addopTermList_add.struct = Tab.intType;
 		else {
-			report_info("left.getKind(): " + left.getKind(), null);
-			report_info("right.getKind(): " + right.getKind(), null);
 			report_error("Addop operacija ne int vrednosti.", addopTermList_add);
 			addopTermList_add.struct = Tab.noType;
 		}
@@ -467,7 +601,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("Dekrement ne int promenljive: " + designatorStatement_dec.getDesignator().obj.getName(), designatorStatement_dec);
 	}
 	
-	//Single Statements
+	@Override
+	public void visit(DesignatorStatement_meth designatorStatement_meth) {
+		if(designatorStatement_meth.getMethodInvokeName().obj.getKind() != Obj.Meth) {
+			report_error("Ime " + designatorStatement_meth.getMethodInvokeName().obj.getName() + " nije naziv metode.", designatorStatement_meth);
+		}
+	}
 	
 	@Override
 	public void visit(Statement_read singleStatement_read) {

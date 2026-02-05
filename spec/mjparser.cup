@@ -49,7 +49,7 @@ scan with {:
 	return s;
 :}
 
-terminal PROG, MAIN, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW;
+terminal PROG, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW;
 terminal INC, PLUS, MUL, DIV, MOD, MINUS, DEC, ASSIGN, COLON, SEMI, COMMA, DOT, QUESTION;
 terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
 terminal RELOP_EQ, RELOP_NEQ, RELOP_GT, RELOP_GE, RELOP_LT, RELOP_LE;
@@ -59,15 +59,16 @@ terminal Character CHARACTER;
 
 nonterminal Program, ProgramName, DeclList, Decl, ConstDecl, ConstList, ConstAssign, VarDeclList, VarList, VarDecl, Var;
 nonterminal EnumDecl, EnumName, EnumElemList, EnumElem;
-nonterminal MainMethod, StatementList, Statement, DesignatorStatement;
+nonterminal MethodRet, MethodList, MethodDecl, FormParamList, FormParam, ActParam, ActParamList;
+nonterminal StatementList, Statement, DesignatorStatement;
 nonterminal ExprNoTernary;
 nonterminal Assignop, Addop, Mulop, Relop;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, CondFact, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MainName;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MethodName, MethodInvokeName;
 
 
-Program ::= (Program) PROG ProgramName DeclList LBRACE MainMethod RBRACE
+Program ::= (Program) PROG ProgramName DeclList LBRACE MethodList RBRACE
 			;
 
 ProgramName ::=	(ProgramName) IDENT
@@ -133,15 +134,37 @@ EnumElem ::=	(EnumElemExplicit) IDENT ASSIGN NUMBER
 Type ::=	(Type) IDENT
 			;
 
-MainMethod ::= (MainMethod) VOID MainName LPAREN RPAREN VarDeclList LBRACE StatementList RBRACE
-				;
-
-MainName ::=	(MainName) MAIN
-				;
-				
 VarDeclList ::=	(VarDeclList_list) VarDeclList VarDecl
 				|
 				(VarDeclList_e) /* epsilon */
+				;
+
+MethodList ::=	(MethodList_list) MethodList MethodDecl
+				|
+				(MethodList_e) /* epsilon */
+				;
+				
+MethodDecl ::=	(MethodDecl) MethodRet MethodName LPAREN FormParamList RPAREN VarDeclList LBRACE StatementList RBRACE
+				;
+				
+MethodRet ::=	(MethodRet_type) Type
+				|
+				(MethodRet_void) VOID
+				;
+
+MethodName ::=	(MethodName) IDENT
+				;
+
+FormParamList ::=	(FormParamList_list) FormParamList COMMA FormParam
+					|
+					(FormParamList_param) FormParam
+					|
+					(FormParamList_e) /* epsilon */
+					;
+					
+FormParam ::=	(FormParam_var) Type IDENT
+				|
+				(FormParam_arr) Type IDENT LBRACK RBRACK
 				;
 
 StatementList ::= 	(StatementList_rec) StatementList Statement
@@ -164,6 +187,8 @@ Statement ::=	(Statement_ds) DesignatorStatement SEMI
 			     		
 DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						|
+						(DesignatorStatement_meth) MethodInvokeName LPAREN ActParamList RPAREN
+						|
 						(DesignatorStatement_error) error:e
 						{: parser.report_error("Oporavak od greske u DS. Linija: " + eleft, null); :}
 						|
@@ -171,6 +196,8 @@ DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						|
 						(DesignatorStatement_dec) Designator DEC
 						;
+						
+MethodInvokeName ::=	(MethodInvokeName) IDENT;
 						
 Expr ::=	(Expr_noternary) ExprNoTernary
 			|
@@ -212,6 +239,8 @@ Unary ::= 	(Unary_m) MINUS
 			;
 
 FactorSub ::= 	(FactorSub_var) Designator
+				|
+				(FactorSub_meth) MethodInvokeName LPAREN ActParamList RPAREN
 		   		|
 		   		(FactorSub_l) Literal
 		   		|		   
@@ -226,6 +255,15 @@ Designator ::= 	(Designator_simple) IDENT
 				|
 				(Designator_arr) Designator LBRACK Expr RBRACK
 				;
+				
+ActParamList ::=	(ActParamList_list) ActParamList COMMA ActParam
+					|
+					(ActParamList_param) ActParam
+					|
+					(ActParamList_e) /* epsilon */
+					;
+
+ActParam ::=	(ActParam) Expr;
 
 Assignop ::= (Assignop) ASSIGN;
 

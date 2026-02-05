@@ -38,7 +38,6 @@ import java_cup.runtime.Symbol;
 "\f" 	{ }
 
 "program"   { return new_symbol(sym.PROG, yytext());}
-"main"		{ return new_symbol(sym.MAIN, yytext());}
 "enum"   	{ return new_symbol(sym.ENUM, yytext());}
 "const"		{ return new_symbol(sym.CONST, yytext());}
 "read"		{ return new_symbol(sym.READ, yytext());}

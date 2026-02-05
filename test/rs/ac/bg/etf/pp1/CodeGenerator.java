@@ -74,24 +74,20 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(MainName mainName) {
+	public void visit(MethodName methodName) {
+		if (methodName.getI1().equals("main")) {
+			mainPc = Code.pc;
+		}
 		
-		mainPc = Code.pc;
-		mainName.obj.setAdr(Code.pc);
+		methodName.obj.setAdr(Code.pc);
 		
-		// Collect arguments and local variables.
-		SyntaxNode methodNode = mainName.getParent();
-		VarCounter varCnt = new VarCounter();
-		methodNode.traverseTopDown(varCnt);
-		
-		// Generate the entry.
 		Code.put(Code.enter);
-		Code.put(0); // no formal params in lvl A main
-		Code.put(varCnt.getCount());
+		Code.put(methodName.obj.getLevel());
+		Code.put(methodName.obj.getLocalSymbols().size());
 	}
 	
 	@Override
-	public void visit(MainMethod mainMethod) {
+	public void visit(MethodDecl methodDecl) {
 		Code.put(Code.exit);
 		Code.put(Code.return_);
 	}
@@ -107,9 +103,18 @@ public class CodeGenerator extends VisitorAdaptor {
 				// e.g. x = a; a bi se pushovao i kao designator i kao factor
 				&& parent.getClass() != Designator_dot.class
 				// e.g. x = EnumName.ELEM; pokusao bi load od EnumName
+				&& d.obj.getKind() != Obj.Meth
+				
 		){
 			Code.load(d.obj);	
 		}
+	}
+	
+	@Override
+	public void visit(FactorSub_meth factorSub_meth) {
+		int offset = factorSub_meth.getMethodInvokeName().obj.getAdr() - Code.pc;
+		Code.put(Code.call);
+		Code.put2(offset);
 	}
 	
 	@Override
@@ -253,6 +258,16 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(DesignatorStatement_assign stmt) {
 		Code.store(stmt.getDesignator().obj);
+	}
+	
+	@Override
+	public void visit(DesignatorStatement_meth stmt) {
+		int offset = stmt.getMethodInvokeName().obj.getAdr() - Code.pc;
+		Code.put(Code.call);
+		Code.put2(offset);
+		
+		if(stmt.getMethodInvokeName().obj.getType() != Tab.noType)
+			Code.put(Code.pop);
 	}
 	
 	// Condition
