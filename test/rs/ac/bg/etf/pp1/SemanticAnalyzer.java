@@ -27,7 +27,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public int getnVars() {
 		return nVars;
 	}
-
+	
+	public SemanticAnalyzer() {
+		initDefaultMeth();
+	}
+	
 	/* LOG MESSAGES */
 	public void report_error(String message, SyntaxNode info) {
 		errorDetected  = true;
@@ -177,7 +181,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 						}
 					}
 					else {
-						report_info("got:" + apStruct.getKind() + ", expected " +fp.getType().getKind(),null);
 						report_error("Neadekvatan tip stvarnog parametra " + fp.getName() + " metode " + method.obj.getName(), actParam);
 					}
 					method.fp_ix++;
@@ -701,11 +704,20 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(Statement_return1 statement_return1) {
 		returnHappend = true;
+		if (currentMethod.getType() != Tab.noType) {
+			report_error("Metoda " + currentMethod.getName() + " ocekuje povratni tip, a ne void", statement_return1);
+		}
 	}
 	
 	@Override
 	public void visit(Statement_return2 statement_return2) {
 		returnHappend = true;
+		Struct exprStruct = statement_return2.getExpr().struct;
+		if (currentMethod.getType() == Tab.noType) {
+			report_error("Metoda " + currentMethod.getName() + " ima povratni tip void i ne ocekuje izraz u return naredbi", statement_return2);
+		} else if (exprStruct != currentMethod.getType()) {
+			report_error("Naredba return nema odgovarajuci povratni tip.", statement_return2);
+		}
 	}
 	
 	@Override
@@ -760,6 +772,25 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			cases.peek().add(caseNum.getN1());
 		}
 	}
+	
+	private void initDefaultMeth() {
+		Obj ordObj = Tab.find("ord");
+		Tab.openScope();
+		Obj p = Tab.insert(Obj.Var, "ord_param", Tab.charType);
+		p.setFpPos(1);
+		Tab.chainLocalSymbols(ordObj);
+		Tab.closeScope();
+		ordObj.setLevel(1);
+		
+		Obj chrObj = Tab.find("chr");
+		Tab.openScope();
+		p = Tab.insert(Obj.Var, "chr_param", Tab.intType);
+		p.setFpPos(1);
+		Tab.chainLocalSymbols(chrObj);
+		Tab.closeScope();
+		chrObj.setLevel(1);
+	}
+
 	
 	
 }

@@ -2,17 +2,10 @@ program MJProgram
 
 {
 
-	void main() int i, j; bool b; {
+	void main() int i, j; bool b; char c; {
 		
-		for (i=2; i<=7; i++) {
-			if (i == 7) continue;
-			for (j = 0; j<i; j++) {
-				if (j != 3) print(j);
-			}
-			if (i == 7) break; 
-			else print('a');
-			print(i);
-		}
+		c = 'c';
+		print(chr(c));
 		
 		return;
 	}

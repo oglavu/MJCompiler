@@ -42,17 +42,9 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	public CodeGenerator() {
-		{	// chr
-			Tab.chrObj.setAdr(Code.pc);
-			Code.put(Code.enter);
-			Code.put(1);
-			Code.put(1);
-			Code.put(Code.load_n);
-			Code.put(Code.exit);
-			Code.put(Code.return_);
-		}
-		{	// ord
+		{	// chr/ord
 			Tab.ordObj.setAdr(Code.pc);
+			Tab.chrObj.setAdr(Code.pc);
 			Code.put(Code.enter);
 			Code.put(1);
 			Code.put(1);
