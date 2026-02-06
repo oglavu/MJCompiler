@@ -4,22 +4,29 @@ program MJProgram
 
 	void main() int i, j; bool b; {
 		
-		switch (i) {
-			case 0:
-				print('5');
-				switch (2) {
-					case 0:
-						print(0);
-					case 2:
-						print(2);
-				}
-			case 2:
-				print('2');
-				break;
-			case 1:
-				print('1');
-				break;
+		i = j==0 ? 1 : 2;
+		print(i);
+		
+		i = b ? 1 : 2;
+		print(i);
+		
+		if (b) {
+			print('s');
+		} else {
+			print('e');
 		}
+		
+		if (b==false) {
+			print('s');
+		} else {
+			print('e');
+		}
+		
+		if (b == false) {
+			if (b && i == j || i == 2)
+			print('s');
+		}
+		
 		return;
 	}
 }

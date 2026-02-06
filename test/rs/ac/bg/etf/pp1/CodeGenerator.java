@@ -271,8 +271,11 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	// Condition
-	private Stack<Integer> ternaryCondFalse = new Stack<Integer>();
-	private Stack<Integer> ternaryEnd = new Stack<Integer>();
+	// svi skokovi su unapred tkd. su svi skokovi za patch adres
+	private Stack<Integer> skipCondTerm = new Stack<>();
+	private Stack<Integer> skipCondition = new Stack<>();
+	private Stack<Integer> skipThen = new Stack<>();
+	private Stack<Integer> skipElse = new Stack<>();
 	
 	private int getRelopCode(Relop r) {
 		if (r instanceof Relop_eq)
@@ -291,59 +294,71 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(CondFactNoRelop c) {
+	public void visit(CondFact_expr condFact_expr) {
 		Code.loadConst(1);
-		// to be filled with corresponding ternaryCondFalse value
-		Code.putFalseJump(Code.eq, 0); // -> false
-		// | true
+		Code.putFalseJump(Code.eq, 0); // -> to next CondTerm
+		// | to next CondFact
 		// V
-		ternaryCondFalse.push(Code.pc - 2); // adr before jmp
+		skipCondTerm.push(Code.pc - 2);
 	}
 	
 	@Override
-	public void visit(CondFactRelop c) {
-		// to be filled with corresponding ternaryCondFalse value
-		Code.putFalseJump(getRelopCode(c.getRelop()), 0); // -> false
-		// | true
+	public void visit(CondFact_relop condFact_relop) {
+		Code.putFalseJump(getRelopCode(condFact_relop.getRelop()), 0); // -> to next CondTerm
+		// | to next CondFact
 		// V
-		ternaryCondFalse.push(Code.pc - 2); // adr before jmp
+		skipCondTerm.push(Code.pc - 2);
 	}
 	
 	@Override
-	public void visit(CondTrueExpr e) {
-		// to be filled with corresponding ternaryEnd value
-		Code.putJump(0); // -> end of ternary
-		// | condFalseExpr code
+	public void visit(CondTerm condTerm) {
+		// ako su stigli na kraj CondFactListe 
+		// znaci da su svi uslovi iz nje tacni
+		Code.putJump(0); // -> to StmtThen
+		skipCondition.push(Code.pc - 2);
+		// | next CondFactList
 		// V
-		Code.fixup(ternaryCondFalse.pop());
-		ternaryEnd.push(Code.pc - 2);
+		while(!skipCondTerm.empty())
+			Code.fixup(skipCondTerm.pop());
 	}
 	
 	@Override
-	public void visit(CondFalseExpr e) {
-		Code.fixup(ternaryEnd.pop());
+	public void visit(Condition condition) {
+		// da su bili tacni pokupio bi ih neki CondTerm
+		Code.putJump(0); // -> StmtElse
+		skipThen.push(Code.pc - 2);
+		// | StmtThen
+		// V
+		while(!skipCondition.empty())
+			Code.fixup(skipCondition.pop());
 	}
 	
 	@Override
-	public void visit(StatementThen s) {
-		Statement_if parent = (Statement_if) s.getParent();
-		if (parent.getElse() instanceof Else_yes) {
-			// to be filled with corresponding ternaryEnd value
-			Code.putJump(0); // -> end of ternary
-			// | condFalseExpr code
-			// V
-			Code.fixup(ternaryCondFalse.pop());
-			ternaryEnd.push(Code.pc - 2);
-		} else {
-			// no else statement
-			Code.fixup(ternaryCondFalse.pop());
+	public void visit(StatementThen statementThen) {
+		Statement_if s = (Statement_if) statementThen.getParent();
+		if (s.getElse() instanceof Else_yes) {
+			Code.putJump(0); // -> if_end
+			skipElse.push(Code.pc - 2);
 		}
-
+		Code.fixup(skipThen.pop());
 	}
 	
 	@Override
-	public void visit(StatementElse e) {
-		Code.fixup(ternaryEnd.pop());
+	public void visit(Else_yes else_yes) {
+		// samo se sa kraja StmtThen-a skace ovde
+		Code.fixup(skipElse.pop());
+	} 
+	
+	@Override
+	public void visit(CondTrueExpr condTrueExpr) {
+		Code.putJump(0); // -> if_end
+		skipElse.push(Code.pc - 2);
+		Code.fixup(skipThen.pop());
+	}
+	
+	@Override
+	public void visit(CondFalseExpr condFalseExpr) {
+		Code.fixup(skipElse.pop());
 	}
 	
 	// For loop

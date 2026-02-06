@@ -526,7 +526,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(Expr_ternary expr_ternary) {
 		Struct trueStruct = expr_ternary.getCondTrueExpr().struct,
 			falseStruct = expr_ternary.getCondFalseExpr().struct,
-			condStruct = expr_ternary.getCondFact().struct;
+			condStruct = expr_ternary.getCondition().struct;
 		if (!condStruct.equals(boolType)) {
 			report_error("Uslov mora biti bool", expr_ternary);
 			expr_ternary.struct = Tab.noType;
@@ -555,20 +555,74 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(CondFactNoRelop condFactNoRelop) {
-		condFactNoRelop.struct = condFactNoRelop.getExprNoTernary().getAddopTermList().struct;
+	public void visit(CondFact_expr condFact_expr) {
+		condFact_expr.struct = condFact_expr.getExprNoTernary().getAddopTermList().struct;
+		report_info("tip: " + condFact_expr.struct.getKind(), null);
 	}
 	
 	@Override
-	public void visit(CondFactRelop condFactRelop) {
-		Struct expr1Struct = condFactRelop.getExprNoTernary().getAddopTermList().struct,
-			expr2Struct = condFactRelop.getExprNoTernary1().getAddopTermList().struct;
+	public void visit(CondFact_relop condFact_relop) {
+		Struct expr1Struct = condFact_relop.getExprNoTernary().getAddopTermList().struct,
+			expr2Struct = condFact_relop.getExprNoTernary1().getAddopTermList().struct;
 		if (expr1Struct.compatibleWith(expr2Struct)) {
-			condFactRelop.struct = boolType;
+			condFact_relop.struct = boolType;
 		} else {
-			condFactRelop.struct = Tab.noType;
+			condFact_relop.struct = Tab.noType;
 		}
 	}
+	
+	@Override
+	public void visit(CondFactList_list condFactList_list) {
+		Struct left = condFactList_list.getCondFactList().struct;
+		Struct right = condFactList_list.getCondFact().struct;
+		
+		if(left.equals(boolType) && right.equals(boolType))
+			condFactList_list.struct = boolType;
+		else {
+			report_error("And operacija ne bool vrednosti.", condFactList_list);
+			condFactList_list.struct = Tab.noType;
+		}
+		report_info("tip: " + condFactList_list.struct.getKind(), null);
+	}
+	
+	@Override
+	public void visit(CondFactList_fact condFactList_fact) {
+		condFactList_fact.struct = condFactList_fact.getCondFact().struct;
+	}
+	
+	@Override
+	public void visit(CondTerm condTerm) {
+		condTerm.struct = condTerm.getCondFactList().struct;
+		report_info("tip: " + condTerm.struct.getKind(), null);
+	}
+	
+	@Override
+	public void visit(CondTermList_list condTermList_list) {
+		Struct left = condTermList_list.getCondTermList().struct;
+		Struct right = condTermList_list.getCondTerm().struct;
+		
+		if(left.equals(boolType) && right.equals(boolType))
+			condTermList_list.struct = boolType;
+		else {
+			report_error("OR operacija ne bool vrednosti.", condTermList_list);
+			condTermList_list.struct = Tab.noType;
+		}
+		report_info("tip: " + condTermList_list.struct.getKind(), null);
+		
+	}
+	
+	@Override
+	public void visit(CondTermList_term condTermList_term) {
+		condTermList_term.struct = condTermList_term.getCondTerm().struct;
+	}
+	
+	@Override
+	public void visit(Condition condition) {
+		report_info("tip: " + condition.getCondTermList().struct.getKind(), condition);
+		condition.struct = condition.getCondTermList().struct;
+	}
+	
+	// For
 	
 	private int for_depth = 0;
 	
@@ -666,7 +720,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(Statement_if statement_if) {
-		if (statement_if.getCondFact().struct == Tab.noType) {
+		if (statement_if.getCondition().struct == Tab.noType) {
 			report_error("Uslov IFa je neadekvatnog tipa.", statement_if);
 		}
 	}

@@ -50,7 +50,7 @@ scan with {:
 :}
 
 terminal PROG, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW, IF, ELSE, FOR, CONTINUE, BREAK, SWITCH, CASE;
-terminal INC, PLUS, MUL, DIV, MOD, MINUS, DEC, ASSIGN, COLON, SEMI, COMMA, DOT, QUESTION;
+terminal OR, AND, INC, PLUS, MUL, DIV, MOD, MINUS, DEC, ASSIGN, COLON, SEMI, COMMA, DOT, QUESTION;
 terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
 terminal RELOP_EQ, RELOP_NEQ, RELOP_GT, RELOP_GE, RELOP_LT, RELOP_LE;
 terminal String IDENT;
@@ -67,7 +67,8 @@ nonterminal ForInitStatement, ForStepStatement, ForBodyStatement;
 nonterminal Else, StatementThen, StatementElse;
 nonterminal Assignop, Addop, Mulop, Relop;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, CondFact, ForCond, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, ForCond, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm, CondFactList, CondFact;
 nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MethodName, MethodInvokeName;
 
 precedence left ELSE;
@@ -181,7 +182,7 @@ StatementBlock ::=	(StatementBlock) LBRACE StatementList RBRACE
 
 Statement ::=	(Statement_ds) DesignatorStatement SEMI
 				|
-				(Statement_if) IF LPAREN CondFact RPAREN StatementThen Else
+				(Statement_if) IF LPAREN Condition RPAREN StatementThen Else
 				|
 				(Statement_for) FOR LPAREN ForInitStatement SEMI ForCond SEMI ForStepStatement RPAREN ForBodyStatement
 				|
@@ -259,7 +260,7 @@ MethodInvokeName ::=	(MethodInvokeName) IDENT;
 						
 Expr ::=	(Expr_noternary) ExprNoTernary
 			|
-			(Expr_ternary) CondFact QUESTION CondTrueExpr COLON CondFalseExpr
+			(Expr_ternary) Condition QUESTION CondTrueExpr COLON CondFalseExpr
 		 	;
 		 	
 ExprNoTernary ::=	(ExprNoTernary) AddopTermList;
@@ -275,9 +276,23 @@ AddopTermList ::= 	(AddopTermList_add) AddopTermList Addop Term
 					(AddopTermList_term) Term
 					;
 
-CondFact ::= 	(CondFactNoRelop) ExprNoTernary
+Condition ::=	(Condition) CondTermList;
+				
+CondTermList ::=	(CondTermList_list) CondTermList OR CondTerm
+					|
+					(CondTermList_term) CondTerm
+					;
+					
+CondTerm ::=	(CondTerm) CondFactList;
+
+CondFactList ::=	(CondFactList_list) CondFactList AND CondFact
+					|
+					(CondFactList_fact) CondFact
+					;
+				
+CondFact ::= 	(CondFact_expr) ExprNoTernary
              	|
-             	(CondFactRelop) ExprNoTernary Relop ExprNoTernary
+             	(CondFact_relop) ExprNoTernary Relop ExprNoTernary
              	;
 
 Term ::= (Term) MulopFactorList

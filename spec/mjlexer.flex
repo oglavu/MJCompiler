@@ -53,6 +53,8 @@ import java_cup.runtime.Symbol;
 "switch" 	{ return new_symbol(sym.SWITCH, yytext()); }
 "case"	 	{ return new_symbol(sym.CASE, yytext()); }
 
+"||" 		{ return new_symbol(sym.OR, yytext()); }
+"&&" 		{ return new_symbol(sym.AND, yytext()); }
 "++" 		{ return new_symbol(sym.INC, yytext()); }
 "+" 		{ return new_symbol(sym.PLUS, yytext()); }
 "*" 		{ return new_symbol(sym.MUL, yytext()); }
