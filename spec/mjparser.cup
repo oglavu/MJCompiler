@@ -59,7 +59,7 @@ terminal Character CHARACTER;
 
 nonterminal Program, ProgramName, DeclList, Decl, ConstDecl, ConstList, ConstAssign, VarDeclList, VarList, VarDecl, Var;
 nonterminal EnumDecl, EnumName, EnumElemList, EnumElem;
-nonterminal MethodRet, MethodList, MethodDecl, FormParamList, FormParam, ActParam, ActParamList;
+nonterminal MethodRet, MethodList, MethodDecl, FormParamList, FormParamMore, FormParam, ActParam, ActParamMore, ActParamList;
 nonterminal StatementList, Statement, StatementBlock, DesignatorStatement;
 nonterminal ExprNoTernary;
 nonterminal SwitchExpr, CaseDeclList, CaseDecl, CaseNum;
@@ -119,12 +119,14 @@ Var ::=	(Var_var) IDENT
 		|
 		(Var_arr) IDENT LBRACK RBRACK
 		;
-				
-EnumDecl ::=	(EnumDecl) ENUM EnumName LBRACE  EnumElemList RBRACE
-				;
+		
+Type ::=	(Type) IDENT;
 
-EnumName ::=	(EnumName) IDENT
-				;
+// --------------- Enum ---------------
+				
+EnumDecl ::=	(EnumDecl) ENUM EnumName LBRACE  EnumElemList RBRACE;
+
+EnumName ::=	(EnumName) IDENT;
 
 EnumElemList ::= 	(EnumElemList_list) EnumElemList COMMA EnumElem
 					|
@@ -136,49 +138,57 @@ EnumElem ::=	(EnumElemExplicit) IDENT ASSIGN NUMBER
 				(EnumElemImplicit) IDENT
 				;
 
-Type ::=	(Type) IDENT
-			;
-
-VarDeclList ::=	(VarDeclList_list) VarDeclList VarDecl
-				|
-				(VarDeclList_e) /* epsilon */
-				;
+// --------------- Methods ---------------
 
 MethodList ::=	(MethodList_list) MethodList MethodDecl
 				|
 				(MethodList_e) /* epsilon */
 				;
 				
-MethodDecl ::=	(MethodDecl) MethodRet MethodName LPAREN FormParamList RPAREN VarDeclList StatementBlock
-				;
+MethodDecl ::=	(MethodDecl) MethodRet MethodName LPAREN FormParamList RPAREN VarDeclList StatementBlock;
 				
 MethodRet ::=	(MethodRet_type) Type
 				|
 				(MethodRet_void) VOID
 				;
 
-MethodName ::=	(MethodName) IDENT
-				;
+MethodName ::=	(MethodName) IDENT;
 
-FormParamList ::=	(FormParamList_list) FormParamList COMMA FormParam
-					|
-					(FormParamList_param) FormParam
+FormParamList ::=	(FormParamList_list) FormParam FormParamMore
 					|
 					(FormParamList_e) /* epsilon */
+					;
+					
+FormParamMore ::=	(FormParamMore_list) COMMA FormParam FormParamMore
+					|
+					(FormParamMore_e) /* epsilon */
 					;
 					
 FormParam ::=	(FormParam_var) Type IDENT
 				|
 				(FormParam_arr) Type IDENT LBRACK RBRACK
 				;
+				
+VarDeclList ::=	(VarDeclList_list) VarDeclList VarDecl
+				|
+				(VarDeclList_e) /* epsilon */
+				;
+				
+ActParamList ::=	(ActParamList_list) ActParam ActParamMore
+					|
+					(ActParamList_e) /* epsilon */
+    				;
 
-StatementList ::= 	(StatementList_rec) StatementList Statement
-				   	|										   
-				  	(StatementList_e) /* epsilon */
-				   	;
-				   	
-StatementBlock ::=	(StatementBlock) LBRACE StatementList RBRACE
-					;
+ActParamMore ::=	(ActParamMore_list) COMMA ActParam ActParamMore
+					|
+					(ActParamMore_e) /* epsilon */
+    				;
+
+ActParam ::= (ActParam) Expr;
+
+MethodInvokeName ::=	(MethodInvokeName) IDENT;
+
+// --------------- Statement ---------------
 
 Statement ::=	(Statement_ds) DesignatorStatement SEMI
 				|
@@ -204,42 +214,6 @@ Statement ::=	(Statement_ds) DesignatorStatement SEMI
 			  	|
 				(Statement_print2) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
 		  		;
-
-SwitchExpr ::=	(SwitchExpr) Expr
-				;
-				
-CaseDeclList ::=	(CaseDeclList_list) CaseDecl CaseDeclList
-					|
-					(CaseDeclList_e) /* epsilon */
-					;
-				
-CaseDecl ::=	(CaseDecl) CASE CaseNum COLON StatementList
-				;
-				
-CaseNum ::=	(CaseNum) NUMBER
-			;
-		
-Else ::=	(Else_yes) ELSE StatementElse
-			|
-			(Else_no) /* epsilon */
-			;
-			
-StatementThen ::=	(StatementThen) Statement
-					;
-					
-StatementElse ::=	(StatementElse) Statement
-					;
-					
-ForInitStatement ::=	(ForInitStatement) DesignatorStatement
-						;
-			     		
-ForCondition ::= 	(ForCondition) Condition;
-             	
-ForStepStatement ::=	(ForStepStatement) DesignatorStatement
-						;
-						
-ForBodyStatement ::=	(ForBodyStatement) Statement
-						;
              	
 DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						|
@@ -252,26 +226,49 @@ DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						|
 						(DesignatorStatement_dec) Designator DEC
 						;
-						
-MethodInvokeName ::=	(MethodInvokeName) IDENT;
-						
-Expr ::=	(Expr_noternary) ExprNoTernary
-			|
-			(Expr_ternary) Condition QUESTION CondTrueExpr COLON CondFalseExpr
-		 	;
-		 	
-ExprNoTernary ::=	(ExprNoTernary) AddopTermList;
 
-CondTrueExpr ::=	(CondTrueExpr) Expr
-					;
-					
-CondFalseExpr ::=	(CondFalseExpr) Expr
-					;
+StatementList ::= 	(StatementList_rec) StatementList Statement
+				   	|										   
+				  	(StatementList_e) /* epsilon */
+				   	;
+				   	
+StatementBlock ::=	(StatementBlock) LBRACE StatementList RBRACE;
 
-AddopTermList ::= 	(AddopTermList_add) AddopTermList Addop Term
+// --------------- Switch ---------------
+
+SwitchExpr ::=	(SwitchExpr) Expr;
+				
+CaseDeclList ::=	(CaseDeclList_list) CaseDecl CaseDeclList
 					|
-					(AddopTermList_term) Term
+					(CaseDeclList_e) /* epsilon */
 					;
+				
+CaseDecl ::=	(CaseDecl) CASE CaseNum COLON StatementList;
+				
+CaseNum ::=	(CaseNum) NUMBER;
+
+// --------------- If ---------------
+
+Else ::=	(Else_yes) ELSE StatementElse
+			|
+			(Else_no) /* epsilon */
+			;
+			
+StatementThen ::=	(StatementThen) Statement;
+					
+StatementElse ::=	(StatementElse) Statement;
+
+// --------------- For Loop ---------------
+
+ForInitStatement ::=	(ForInitStatement) DesignatorStatement;
+			     		
+ForCondition ::= 	(ForCondition) Condition;
+             	
+ForStepStatement ::=	(ForStepStatement) DesignatorStatement;
+						
+ForBodyStatement ::=	(ForBodyStatement) Statement;
+
+// --------------- Condition ---------------
 
 Condition ::=	(Condition) CondTermList;
 				
@@ -292,16 +289,31 @@ CondFact ::= 	(CondFact_expr) ExprNoTernary
              	(CondFact_relop) ExprNoTernary Relop ExprNoTernary
              	;
 
-Term ::= (Term) MulopFactorList
-		 ;
+// --------------- Expr basics ---------------
+Expr ::=	(Expr_noternary) ExprNoTernary
+			|
+			(Expr_ternary) Condition QUESTION CondTrueExpr COLON CondFalseExpr
+		 	;
+		 	
+CondTrueExpr ::=	(CondTrueExpr) Expr;
+					
+CondFalseExpr ::=	(CondFalseExpr) Expr;
+		 	
+ExprNoTernary ::=	(ExprNoTernary) AddopTermList;
+     	
+AddopTermList ::= 	(AddopTermList_add) AddopTermList Addop Term
+					|
+					(AddopTermList_term) Term
+					;
+
+Term ::= (Term) MulopFactorList;
 
 MulopFactorList ::= (MulopFactorList_mul) MulopFactorList Mulop Factor
 					|
 					(MulopFactorList_factor) Factor
 					;
 			
-Factor ::=	(Factor) Unary FactorSub
-			;
+Factor ::=	(Factor) Unary FactorSub;
 
 Unary ::= 	(Unary_m) MINUS
 			|
@@ -325,15 +337,6 @@ Designator ::= 	(Designator_simple) IDENT
 				|
 				(Designator_arr) Designator LBRACK Expr RBRACK
 				;
-				
-ActParamList ::=	(ActParamList_list) ActParamList COMMA ActParam
-					|
-					(ActParamList_param) ActParam
-					|
-					(ActParamList_e) /* epsilon */
-					;
-
-ActParam ::=	(ActParam) Expr;
 
 Assignop ::= (Assignop) ASSIGN;
 

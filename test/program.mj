@@ -2,10 +2,12 @@ program MJProgram
 
 {
 
+	int f(char c, int i, bool b) {return ord(c);}
+
 	void main() int i, j; bool b; char c; {
 		
 		c = 'c';
-		print(chr(c));
+		print(f(c,i,b));
 		
 		return;
 	}
