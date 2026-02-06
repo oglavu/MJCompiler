@@ -63,11 +63,11 @@ nonterminal MethodRet, MethodList, MethodDecl, FormParamList, FormParam, ActPara
 nonterminal StatementList, Statement, StatementBlock, DesignatorStatement;
 nonterminal ExprNoTernary;
 nonterminal SwitchExpr, CaseDeclList, CaseDecl, CaseNum;
-nonterminal ForInitStatement, ForStepStatement, ForBodyStatement;
+nonterminal ForInitStatement, ForCondition, ForStepStatement, ForBodyStatement;
 nonterminal Else, StatementThen, StatementElse;
 nonterminal Assignop, Addop, Mulop, Relop;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, ForCond, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm, CondFactList, CondFact;
 nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MethodName, MethodInvokeName;
 
@@ -184,7 +184,7 @@ Statement ::=	(Statement_ds) DesignatorStatement SEMI
 				|
 				(Statement_if) IF LPAREN Condition RPAREN StatementThen Else
 				|
-				(Statement_for) FOR LPAREN ForInitStatement SEMI ForCond SEMI ForStepStatement RPAREN ForBodyStatement
+				(Statement_for) FOR LPAREN ForInitStatement SEMI ForCondition SEMI ForStepStatement RPAREN ForBodyStatement
 				|
 				(Statement_continue) CONTINUE SEMI
 				|
@@ -233,10 +233,7 @@ StatementElse ::=	(StatementElse) Statement
 ForInitStatement ::=	(ForInitStatement) DesignatorStatement
 						;
 			     		
-ForCond ::= 	(ForCondNoRelop) ExprNoTernary
-             	|
-             	(ForCondRelop) ExprNoTernary Relop ExprNoTernary
-             	;
+ForCondition ::= 	(ForCondition) Condition;
              	
 ForStepStatement ::=	(ForStepStatement) DesignatorStatement
 						;

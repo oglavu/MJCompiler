@@ -344,22 +344,12 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(Else_yes else_yes) {
+	public void visit(StatementElse statementElse) {
 		// samo se sa kraja StmtThen-a skace ovde
 		Code.fixup(skipElse.pop());
 	} 
 	
-	@Override
-	public void visit(CondTrueExpr condTrueExpr) {
-		Code.putJump(0); // -> if_end
-		skipElse.push(Code.pc - 2);
-		Code.fixup(skipThen.pop());
-	}
-	
-	@Override
-	public void visit(CondFalseExpr condFalseExpr) {
-		Code.fixup(skipElse.pop());
-	}
+ 
 	
 	// For loop
 	private int for_cond;	// ForCond start
@@ -373,22 +363,11 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(ForCondNoRelop forCondNoRelop) {
-		Code.loadConst(1);
-		Code.putFalseJump(Code.eq, 0); // -> for_end
+	public void visit(ForCondition forCondition) {
 		Code.putJump(0); // -> for_body
 		
 		stepFor.push(Code.pc);
-		endFor.push(Code.pc - 5);
-	}
-	
-	@Override
-	public void visit(ForCondRelop forCond) {
-		Code.putFalseJump(this.getRelopCode(forCond.getRelop()), 0); // -> for_end
-		Code.putJump(0); // -> for_body
-		
-		stepFor.push(Code.pc);
-		endFor.push(Code.pc - 5);
+		endFor.push(skipThen.pop());
 	}
 	
 	@Override

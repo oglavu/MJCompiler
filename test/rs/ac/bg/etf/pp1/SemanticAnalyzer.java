@@ -627,20 +627,10 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	private int for_depth = 0;
 	
 	@Override
-	public void visit(ForCondNoRelop forCondNoRelop) {
+	public void visit(ForCondition forCondition) {
 		this.for_depth++;
-		forCondNoRelop.struct = forCondNoRelop.getExprNoTernary().getAddopTermList().struct;
-	}
-	
-	@Override
-	public void visit(ForCondRelop forCondRelop) {
-		this.for_depth++;
-		Struct expr1Struct = forCondRelop.getExprNoTernary().getAddopTermList().struct,
-			expr2Struct = forCondRelop.getExprNoTernary1().getAddopTermList().struct;
-		if (expr1Struct.compatibleWith(expr2Struct)) {
-			forCondRelop.struct = boolType;
-		} else {
-			forCondRelop.struct = Tab.noType;
+		if (forCondition.getCondition().struct != boolType) {
+			report_error("Ne bool tip u uslovu for petlje", forCondition);
 		}
 	}
 	

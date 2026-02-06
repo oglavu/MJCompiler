@@ -4,27 +4,14 @@ program MJProgram
 
 	void main() int i, j; bool b; {
 		
-		i = j==0 ? 1 : 2;
-		print(i);
-		
-		i = b ? 1 : 2;
-		print(i);
-		
-		if (b) {
-			print('s');
-		} else {
-			print('e');
-		}
-		
-		if (b==false) {
-			print('s');
-		} else {
-			print('e');
-		}
-		
-		if (b == false) {
-			if (b && i == j || i == 2)
-			print('s');
+		for (i=2; i<=7; i++) {
+			if (i == 7) continue;
+			for (j = 0; j<i; j++) {
+				if (j != 3) print(j);
+			}
+			if (i == 7) break; 
+			else print('a');
+			print(i);
 		}
 		
 		return;
