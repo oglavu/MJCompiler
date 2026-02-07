@@ -48,10 +48,10 @@ int a;
 		print(eol);
 		print(nizch[jedan * 2]); //c
 		print(eol);
-		//print(ord(nizch[0])); //97
+		print(ord(nizch[0])); //97
 
-		//print(nizch.length); // 3
-		//print(niz.length); // 3
+		print(nizch.length); // 3
+		print(niz.length); // 3
 
 		a=1;
 		read(bodovi);

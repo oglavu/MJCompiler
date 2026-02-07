@@ -89,16 +89,31 @@ public class CodeGenerator extends VisitorAdaptor {
 		SyntaxNode parent = d.getParent();
 		if (parent.getClass() != DesignatorStatement_assign.class
 				// e.g. arr = new int[10]; Sluzi da se levi arr ne pushuje
-				&& parent.getClass() != Statement_read.class
-				
-				&& parent.getClass() != FactorSub_var.class
-				// e.g. x = a; a bi se pushovao i kao designator i kao factor
-				&& parent.getClass() != Designator_dot.class
-				// e.g. x = EnumName.ELEM; pokusao bi load od EnumName
+				&& (parent.getClass() != Statement_read.class || d.obj.getType().getKind() == Struct.Array)
+				// e.g. read(a); Ne treba pushovati a na stek; To se resava Obj-ovima
 				&& d.obj.getKind() != Obj.Meth
-				
+				// e.g. m(); Ne treba da pushuje m kao ime metode
+				&& d.obj.getKind() != Obj.Type
+				// e.g. x = EnumName.ELEM; pokusao bi load od EnumName
 		){
 			Code.load(d.obj);	
+		}
+	}
+	
+	@Override
+	public void visit(Designator_dot d) {
+		if (d.obj.getName().equals("arr.len")) {
+			Code.put(Code.arraylength);
+		} else {
+			Code.load(d.obj);
+		}
+	}
+	
+	@Override
+	public void visit(Designator_arr d) {
+		SyntaxNode parent = d.getParent();
+		if (parent.getClass() != DesignatorStatement_assign.class) {
+			Code.load(d.obj);
 		}
 	}
 	
@@ -119,7 +134,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(FactorSub_var f) {
-		Code.load(f.getDesignator().obj);
+		//Code.load(f.getDesignator().obj);
 	}
 	
 	@Override
@@ -339,9 +354,22 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(StatementElse statementElse) {
 		// samo se sa kraja StmtThen-a skace ovde
 		Code.fixup(skipElse.pop());
-	} 
+	}
 	
- 
+	@Override
+	public void visit(CondTrueExpr condTrueExpr) {
+		Code.putJump(0); // -> if_end
+		skipElse.push(Code.pc - 2);
+		Code.fixup(skipThen.pop());
+	}
+	
+	@Override
+	public void visit(CondFalseExpr condFalseExpr) {
+		// samo se sa kraja StmtThen-a skace ovde
+		Code.fixup(skipElse.pop());
+	}
+	
+
 	
 	// For loop
 	private int for_cond;	// ForCond start

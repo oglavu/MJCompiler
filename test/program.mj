@@ -1,13 +1,24 @@
 program MJProgram 
 
+int a;
+
+enum Broj {
+	NULA,
+	JEDAN,
+	PET = 5,
+	SEST
+}
+
 {
 
-	int f(char c, int i, bool b) {return ord(c);}
-
-	void main() int i, j; bool b; char c; {
+	void main() Broj nula, jedan; int a[]; {
 		
-		c = 'c';
-		print(f(c,i,b));
+		a = new int[10];
+		print(a.length);
+		
+		a[Broj.NULA] = Broj.PET + a.length;
+		
+		print(a[0]);
 		
 		return;
 	}
