@@ -65,6 +65,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(Program program) {
+		nVars = Tab.currentScope().getnVars();
 		Tab.chainLocalSymbols(currentProgam);
 		Tab.closeScope();
 		currentProgam = null;
@@ -129,7 +130,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(MethodDecl methodDecl) {
-		nVars = Tab.currentScope().getnVars();
 		Tab.chainLocalSymbols(currentMethod);
 		Tab.closeScope();
 		
@@ -229,8 +229,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	/* VAR DECLARATIONS */
 	@Override
 	public void visit(Var_var var_var) {
-		Obj varObj = null;
-		varObj = Tab.currentScope().findSymbol(var_var.getI1());
+		 Obj varObj = Tab.currentScope().findSymbol(var_var.getI1());
 
 		if(varObj == null || varObj == Tab.noObj) {
 			varObj = Tab.insert(Obj.Var, var_var.getI1(), currentType);
@@ -278,6 +277,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	//Designator
 	@Override
 	public void visit(Designator_simple designator_simple) {
+		report_info(designator_simple.getI1(), designator_simple);
 		Obj obj = Tab.find(designator_simple.getI1());
 		if(obj == Tab.noObj) {
 			report_error("Pristup nedefinisanoj promenljivi: " + designator_simple.getI1(), designator_simple);
@@ -638,18 +638,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		condition.struct = condition.getCondTermList().struct;
 	}
 	
-	// For
-	
-	private int for_depth = 0;
-	
-	@Override
-	public void visit(ForCondition forCondition) {
-		this.for_depth++;
-		if (forCondition.getCondition().struct != boolType) {
-			report_error("Ne bool tip u uslovu for petlje", forCondition);
-		}
-	}
-	
 	//Designator Statements
 	@Override
 	public void visit(DesignatorStatement_assign designatorStatement_assign) {
@@ -740,6 +728,23 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (statement_if.getCondition().struct == Tab.noType) {
 			report_error("Uslov IFa je neadekvatnog tipa.", statement_if);
 		}
+	}
+	
+	// For
+	
+	private int for_depth = 0;
+	
+	@Override
+	public void visit(ForCondition_cond forCondition_cond) {
+		this.for_depth++;
+		if (forCondition_cond.getCondition().struct != boolType) {
+			report_error("Ne bool tip u uslovu for petlje", forCondition_cond);
+		}
+	}
+	
+	@Override
+	public void visit(ForCondition_e forCondition_e) {
+		this.for_depth++;
 	}
 	
 	@Override

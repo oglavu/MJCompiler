@@ -112,7 +112,8 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(Designator_arr d) {
 		SyntaxNode parent = d.getParent();
-		if (parent.getClass() != DesignatorStatement_assign.class) {
+		if (parent.getClass() != DesignatorStatement_assign.class
+				&& parent.getClass() != Statement_read.class) {
 			Code.load(d.obj);
 		}
 	}
@@ -376,27 +377,47 @@ public class CodeGenerator extends VisitorAdaptor {
 	private Stack<Integer> endFor = new Stack<Integer>(), // to patch with for_end address
 			stepFor = new Stack<Integer>(); // ForStep start
 	
-	@Override
-	public void visit(ForInitStatement forInitStatement) {
+	private void visit_for_init() {
 		endFor.push(-1); // granicnik
 		this.for_cond = Code.pc;
 	}
-	
 	@Override
-	public void visit(ForCondition forCondition) {
+	public void visit(ForInitStatement_ds forInitStatement_ds) {
+		visit_for_init();
+	}
+	@Override
+	public void visit(ForInitStatement_e forInitStatement_e) {
+		visit_for_init();
+	}
+	
+	private void visit_for_cond() {
 		Code.putJump(0); // -> for_body
-		
 		stepFor.push(Code.pc);
 		endFor.push(skipThen.pop());
 	}
-	
 	@Override
-	public void visit(ForStepStatement forStepStatement) {
+	public void visit(ForCondition_cond forCondition_cond) {
+		visit_for_cond();
+	}
+	@Override
+	public void visit(ForCondition_e forCondition_e) {
+		visit_for_cond();
+	}
+	
+	private void visit_for_step() {
 		Code.putJump(for_cond); // -> ForCond
 		Code.fixup(stepFor.peek() - 2);
-		
 		sofBreak.push(0);
 	}
+	@Override
+	public void visit(ForStepStatement_ds forStepStatement_ds) {
+		visit_for_step();
+	}
+	@Override
+	public void visit(ForStepStatement_e forStepStatement_e) {
+		visit_for_step();
+	}
+	
 	
 	@Override
 	public void visit(ForBodyStatement forBodyStatement) {

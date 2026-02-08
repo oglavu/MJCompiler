@@ -260,11 +260,20 @@ StatementElse ::=	(StatementElse) Statement;
 
 // --------------- For Loop ---------------
 
-ForInitStatement ::=	(ForInitStatement) DesignatorStatement;
+ForInitStatement ::=	(ForInitStatement_ds) DesignatorStatement
+						|
+						(ForInitStatement_e) /* epsilon */
+						;
 			     		
-ForCondition ::= 	(ForCondition) Condition;
+ForCondition ::= 	(ForCondition_cond) Condition
+					|
+					(ForCondition_e) /* epsilon */
+					;
              	
-ForStepStatement ::=	(ForStepStatement) DesignatorStatement;
+ForStepStatement ::=	(ForStepStatement_ds) DesignatorStatement
+						|
+						(ForStepStatement_e) /* epsilon */
+						;
 						
 ForBodyStatement ::=	(ForBodyStatement) Statement;
 
