@@ -2,23 +2,29 @@ program MJProgram
 
 int a;
 
-enum Broj {
-	NULA,
-	JEDAN,
-	PET = 5,
-	SEST
+class Broj {
+	int a, b, c;
+	char ch;
+	
+	{
+		void meth(int var, char c) bool t; {
+		
+		}
+	}
 }
 
 {
 
-	void main() Broj nula, jedan; int a[]; {
+	void main() Broj broj1; Broj broj2; {
 		
-		a = new int[10];
-		print(a.length);
+		broj1 = new Broj;
+		broj2 = new Broj;
 		
-		a[Broj.NULA] = Broj.PET + a.length;
+		broj2.a = 3*2;
 		
-		print(a[0]);
+		broj1.a = broj2.a;
+		broj1.b = 1;
+		print(broj1.a);
 		
 		return;
 	}

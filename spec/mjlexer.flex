@@ -52,6 +52,10 @@ import java_cup.runtime.Symbol;
 "break" 	{ return new_symbol(sym.BREAK, yytext()); }
 "switch" 	{ return new_symbol(sym.SWITCH, yytext()); }
 "case"	 	{ return new_symbol(sym.CASE, yytext()); }
+"class"	 	{ return new_symbol(sym.CLASS, yytext()); }
+"extends"	{ return new_symbol(sym.EXTENDS, yytext()); }
+"abstract"	{ return new_symbol(sym.ABSTRACT, yytext()); }
+"this"		{ return new_symbol(sym.THIS, yytext()); }
 
 "||" 		{ return new_symbol(sym.OR, yytext()); }
 "&&" 		{ return new_symbol(sym.AND, yytext()); }

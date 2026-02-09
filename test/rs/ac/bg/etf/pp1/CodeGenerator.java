@@ -52,16 +52,6 @@ public class CodeGenerator extends VisitorAdaptor {
 			Code.put(Code.exit);
 			Code.put(Code.return_);
 		}
-		{	// len
-			Tab.lenObj.setAdr(Code.pc);
-			Code.put(Code.enter);
-			Code.put(1);
-			Code.put(1);
-			Code.put(Code.load_n);
-			Code.put(Code.arraylength);
-			Code.put(Code.exit);
-			Code.put(Code.return_);
-		}
 		
 	}
 	
@@ -95,6 +85,7 @@ public class CodeGenerator extends VisitorAdaptor {
 				// e.g. m(); Ne treba da pushuje m kao ime metode
 				&& d.obj.getKind() != Obj.Type
 				// e.g. x = EnumName.ELEM; pokusao bi load od EnumName
+				
 		){
 			Code.load(d.obj);	
 		}
@@ -102,9 +93,10 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(Designator_dot d) {
+		SyntaxNode parent = d.getParent();
 		if (d.obj.getName().equals("arr.len")) {
 			Code.put(Code.arraylength);
-		} else {
+		} else if (parent.getClass() != DesignatorStatement_assign.class){
 			Code.load(d.obj);
 		}
 	}
@@ -116,6 +108,12 @@ public class CodeGenerator extends VisitorAdaptor {
 				&& parent.getClass() != Statement_read.class) {
 			Code.load(d.obj);
 		}
+	}
+	
+	@Override
+	public void visit(FactorSub_new factorSub_new) {
+		Code.put(Code.new_);
+		Code.put2(factorSub_new.struct.getNumberOfFields() * 4);
 	}
 	
 	@Override
@@ -131,11 +129,6 @@ public class CodeGenerator extends VisitorAdaptor {
 		// b=0: sizeof(arr[0]) = 1 B
 		// b=0: sizeof(arr[0]) = 4 B
 		Code.put(new_arr.getType().struct.equals(Tab.charType) ? 0 : 1);
-	}
-	
-	@Override
-	public void visit(FactorSub_var f) {
-		//Code.load(f.getDesignator().obj);
 	}
 	
 	@Override

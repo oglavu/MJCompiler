@@ -14,11 +14,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	private boolean errorDetected = false;
 	Logger log = Logger.getLogger(getClass());
-	private int constant, nxtEnumVal, nVars, formParamCnt;
+	private int constant, nxtEnumVal, nVars, formParamCnt, fieldCnt;
 	private Struct constantType,
 		currentType,
 		boolType = Tab.find("bool").getType();
-	private Obj currentEnum,
+	private Obj currentClass,
+		currentEnum,
 		mainMethod, 
 		currentMethod,
 		currentProgam;
@@ -137,6 +138,26 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		formParamCnt = 0;
 	}
 	
+	@Override
+	public void visit(ClassName className) {
+		Obj obj = Tab.find(className.getI1());
+		if (obj != Tab.noObj) {
+			report_error("Dvostruka definicija tipa " + className.getI1(), className);
+		} else {
+			this.currentClass = Tab.insert(Obj.Type, className.getI1(), new Struct(Struct.Class));
+			Tab.openScope();
+		}
+	}
+	
+	@Override
+	public void visit(ClassDecl classDecl) {
+		Tab.chainLocalSymbols(currentClass.getType());
+		Tab.closeScope();
+		
+		currentClass = null;
+		fieldCnt = 0;
+	}
+	
 	private class Pair {
 		public Obj obj;
 		public int fp_ix;
@@ -229,10 +250,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	/* VAR DECLARATIONS */
 	@Override
 	public void visit(Var_var var_var) {
-		 Obj varObj = Tab.currentScope().findSymbol(var_var.getI1());
+		 Obj obj = Tab.currentScope().findSymbol(var_var.getI1());
 
-		if(varObj == null || varObj == Tab.noObj) {
-			varObj = Tab.insert(Obj.Var, var_var.getI1(), currentType);
+		if(obj == null || obj == Tab.noObj) {
+			if (currentClass == null) {
+				obj = Tab.insert(Obj.Var, var_var.getI1(), currentType);
+			} else {
+				obj = Tab.insert(Obj.Fld, var_var.getI1(), currentType);
+				obj.setFpPos(++this.fieldCnt);
+				obj.setLevel(2);
+			}
 		}
 		else{
 			report_error("Dvostruka definicija promenljiva: " + var_var.getI1(), var_var);
@@ -241,11 +268,17 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(Var_arr var_arr) {
-		Obj varObj = null;
-		varObj = Tab.currentScope().findSymbol(var_arr.getI1());
+		Obj obj = Tab.currentScope().findSymbol(var_arr.getI1());
 		
-		if(varObj == null || varObj == Tab.noObj) {
-			varObj = Tab.insert(Obj.Var, var_arr.getI1(), new Struct(Struct.Array, currentType));
+		if(obj == null || obj == Tab.noObj) {
+			if (currentClass == null) {
+				obj = Tab.insert(Obj.Var, var_arr.getI1(), new Struct(Struct.Array, currentType));
+			} else {
+				obj = Tab.insert(Obj.Fld, var_arr.getI1(), new Struct(Struct.Array, currentType));
+				obj.setFpPos(++this.fieldCnt);
+				obj.setLevel(2);
+			}
+		
 		}
 		else{
 			report_error("Dvostruka definicija promenljiva: " + var_arr.getI1(), var_arr);
@@ -277,7 +310,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	//Designator
 	@Override
 	public void visit(Designator_simple designator_simple) {
-		report_info(designator_simple.getI1(), designator_simple);
 		Obj obj = Tab.find(designator_simple.getI1());
 		if(obj == Tab.noObj) {
 			report_error("Pristup nedefinisanoj promenljivi: " + designator_simple.getI1(), designator_simple);
@@ -292,22 +324,27 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 	
+	private Obj searchLocals(Obj scopeHolder, String targetName) {
+		for (Obj sym : scopeHolder.getType().getMembers()) {
+			if (sym.getName().contentEquals(targetName)) {
+				return sym;
+			}
+		}
+		return null;
+	}
+	
 	public void visit(Designator_dot designator_dot) {
 		Obj obj = designator_dot.getDesignator().obj;
 		String designatorName = obj.getName();
 		String memberName = designator_dot.getI2();
 		boolean found = false;
 		if (obj.getType().getKind() == Struct.Enum) {
-			for (Obj sym : obj.getType().getMembers()) {
-				if (sym.getName().contentEquals(memberName)) {
-					found = true;
-					designator_dot.obj = sym;
-					break;
-				}
-			}
-			if (!found) {
+			obj = this.searchLocals(obj, memberName);
+			if (obj == null || obj == Tab.noObj) {
 				report_error("Ime " + memberName + " nije clan nabrajanja" + designatorName, designator_dot);
 				designator_dot.obj = Tab.noObj;
+			} else {
+				designator_dot.obj = obj;
 			}
 		} else if (obj.getType().getKind() == Struct.Array) {
 			if (memberName.equals("length")) {
@@ -316,8 +353,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				report_error("Ime " + designatorName + " je tipa niz. Ne sadrzi clan " + memberName, designator_dot);
 				designator_dot.obj = Tab.noObj;
 			}
+		} else if (obj.getType().getKind() == Struct.Class) {
+			obj = this.searchLocals(obj, memberName);
+			if (obj == null || obj == Tab.noObj) {
+				report_error("Ime " + memberName + " nije clan klase " + designatorName, designator_dot);
+				designator_dot.obj = Tab.noObj;
+			} else {
+				designator_dot.obj = obj;
+			}
 		} else {
-			report_error("Nedefinisano ime: " + designatorName, designator_dot);
+			report_error("Nedefinisano ime tipa: " + designatorName, designator_dot);
 			designator_dot.obj = Tab.noObj;
 		}
 	}
@@ -452,8 +497,17 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			factorSub_new_array.struct = Tab.noType;
 		}
 		else
-			factorSub_new_array.struct = new Struct(Struct.Array, currentType);
-			
+			factorSub_new_array.struct = new Struct(Struct.Array, currentType);	
+	}
+	
+	@Override
+	public void visit(FactorSub_new factorSub_new) {
+		Obj obj = Tab.find(factorSub_new.getType().getI1());
+		if (obj != Tab.noObj) {
+			factorSub_new.struct = obj.getType();
+		} else {
+			report_error("Nepostojeci tip dodele.", factorSub_new);
+		}
 	}
 	
 	@Override

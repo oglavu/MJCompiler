@@ -53,6 +53,7 @@ terminal PROG, ENUM, CONST, READ, PRINT, RETURN, VOID, NEW, IF, ELSE, FOR, CONTI
 terminal OR, AND, INC, PLUS, MUL, DIV, MOD, MINUS, DEC, ASSIGN, COLON, SEMI, COMMA, DOT, QUESTION;
 terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK;
 terminal RELOP_EQ, RELOP_NEQ, RELOP_GT, RELOP_GE, RELOP_LT, RELOP_LE;
+terminal CLASS, EXTENDS, ABSTRACT, THIS;
 terminal String IDENT;
 terminal Integer NUMBER, BOOL;
 terminal Character CHARACTER;
@@ -65,6 +66,7 @@ nonterminal ExprNoTernary;
 nonterminal SwitchExpr, CaseDeclList, CaseDecl, CaseNum;
 nonterminal ForInitStatement, ForCondition, ForStepStatement, ForBodyStatement;
 nonterminal Else, StatementThen, StatementElse;
+nonterminal ClassDecl, ClassName, AbstractAtr, ExtendsAtr, FieldDeclList, ClassMethodBlock, ClassMethodList;
 nonterminal Assignop, Addop, Mulop, Relop;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
@@ -89,6 +91,8 @@ Decl ::=	(Decl_const) ConstDecl
 			(Decl_var) VarDecl
 			|
 			(Decl_enum) EnumDecl
+			|
+			(Decl_class) ClassDecl
 			;
 
 ConstDecl ::=	(ConstDecl) CONST Type ConstList SEMI;
@@ -121,6 +125,34 @@ Var ::=	(Var_var) IDENT
 		;
 		
 Type ::=	(Type) IDENT;
+
+// --------------- Class ---------------
+
+ClassDecl ::=	(ClassDecl) AbstractAtr CLASS ClassName ExtendsAtr LBRACE FieldDeclList ClassMethodBlock RBRACE;
+
+ClassName ::=	(ClassName) IDENT;
+
+AbstractAtr ::=	(AbstractAtr_abs) ABSTRACT
+				|
+				(AbstractAtr_e) /* epsilon */
+				;
+
+ExtendsAtr ::=	(ExtendsAtr_ext) EXTENDS Type
+				|
+				(ExtendsAtr_e) /* epsilon */
+				;
+				
+FieldDeclList ::=	(FieldDeclList) VarDeclList;
+
+ClassMethodBlock ::=	(ClassMethodBlock_list) LBRACE ClassMethodList RBRACE
+						|
+						(ClassMethodBlock_e) /* epsilon */
+						;
+	
+ClassMethodList ::=	(ClassMethodList_list) ClassMethodList AbstractAtr MethodDecl
+					|
+					(ClassMethodList_e) /* epsilon */
+					;
 
 // --------------- Enum ---------------
 				
@@ -336,6 +368,8 @@ FactorSub ::= 	(FactorSub_var) Designator
 		   		(FactorSub_l) Literal
 		   		|		   
 		   		(FactorSub_new_array) NEW Type LBRACK Expr RBRACK
+		   		|
+		   		(FactorSub_new) NEW Type
 		   		|
 		   		(FactorSub_expr) LPAREN Expr RPAREN
 		   		;
