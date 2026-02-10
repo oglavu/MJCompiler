@@ -85,6 +85,7 @@ public class CodeGenerator extends VisitorAdaptor {
 				// e.g. m(); Ne treba da pushuje m kao ime metode
 				&& d.obj.getKind() != Obj.Type
 				// e.g. x = EnumName.ELEM; pokusao bi load od EnumName
+				&& (parent.getClass() != Designator_dot.class || parent.getParent().getClass() != MethodInvokeName.class)
 				
 		){
 			Code.load(d.obj);	
@@ -96,7 +97,8 @@ public class CodeGenerator extends VisitorAdaptor {
 		SyntaxNode parent = d.getParent();
 		if (d.obj.getName().equals("arr.len")) {
 			Code.put(Code.arraylength);
-		} else if (parent.getClass() != DesignatorStatement_assign.class){
+		} else if (parent.getClass() != DesignatorStatement_assign.class 
+				&& parent.getClass() != MethodInvokeName.class){
 			Code.load(d.obj);
 		}
 	}
@@ -269,6 +271,7 @@ public class CodeGenerator extends VisitorAdaptor {
 		
 		if(stmt.getMethodInvokeName().obj.getType() != Tab.noType)
 			Code.put(Code.pop);
+		
 	}
 	
 	// Condition

@@ -78,6 +78,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(MethodName methodName) {
 		methodName.obj = Tab.insert(Obj.Meth, methodName.getI1() , currentType);
+		methodName.obj.setLevel(0);
 		if (methodName.getI1().equals("main")) {
 			if (currentType != Tab.noType) {
 				currentMethod = methodName.obj = Tab.noObj;
@@ -172,9 +173,27 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(MethodInvokeName methodInvokeName) {
-		Obj obj = Tab.find(methodInvokeName.getI1());
+		Obj d = methodInvokeName.getDesignator().obj;
+		Obj obj = null;
+		
+		if (d == null || d == Tab.noObj) {
+			report_error("Neadekvatan poziv metode.", methodInvokeName);
+			return;
+		}
+		
+		if (d.getKind() == Obj.Meth) {
+			// from designator_simple
+			// class method
+			obj = d;
+		} else {
+			// global method
+			obj = Tab.currentScope().findSymbol(d.getName());
+		}
+		
+		
 		if (obj == null || obj == Tab.noObj) {
-			report_error("Poziv nedefinisane metode: "+methodInvokeName.getI1(), methodInvokeName);
+			report_error("Poziv nedefinisane metode: "+d.getName(), methodInvokeName);
+			obj = Tab.noObj;
 		}
 		methodInvokeName.obj = obj;
 		methodCalls.push(new Pair(obj, 1)); // fp krecu od 1
@@ -258,7 +277,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			} else {
 				obj = Tab.insert(Obj.Fld, var_var.getI1(), currentType);
 				obj.setFpPos(++this.fieldCnt);
-				obj.setLevel(2);
+				obj.setLevel(1);
 			}
 		}
 		else{
@@ -276,7 +295,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			} else {
 				obj = Tab.insert(Obj.Fld, var_arr.getI1(), new Struct(Struct.Array, currentType));
 				obj.setFpPos(++this.fieldCnt);
-				obj.setLevel(2);
+				obj.setLevel(1);
 			}
 		
 		}
@@ -326,7 +345,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	private Obj searchLocals(Obj scopeHolder, String targetName) {
 		for (Obj sym : scopeHolder.getType().getMembers()) {
-			if (sym.getName().contentEquals(targetName)) {
+			if (sym.getName().equals(targetName)) {
 				return sym;
 			}
 		}
@@ -463,7 +482,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(FactorSub_meth factorSub_meth) {
 		if(factorSub_meth.getMethodInvokeName().obj.getKind() != Obj.Meth) {
-			report_error("Ime " + factorSub_meth.getMethodInvokeName().getI1() + " nije naziv metode.", factorSub_meth);
+			report_error("Ime " + factorSub_meth.getMethodInvokeName().getDesignator().obj.getName() + " nije naziv metode.", factorSub_meth);
 			factorSub_meth.struct = Tab.noType;
 		} 
 		else if (methodCalls.isEmpty()) {
@@ -728,8 +747,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(DesignatorStatement_meth designatorStatement_meth) {
-		if(designatorStatement_meth.getMethodInvokeName().obj.getKind() != Obj.Meth) {
-			report_error("Ime " + designatorStatement_meth.getMethodInvokeName().obj.getName() + " nije naziv metode.", designatorStatement_meth);
+		Obj obj = designatorStatement_meth.getMethodInvokeName().obj;
+		if(obj.getKind() != Obj.Meth) {
+			report_error("Ime " + obj.getName() + " nije naziv metode.", designatorStatement_meth);
 		}
 	}
 	

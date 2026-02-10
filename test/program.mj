@@ -3,28 +3,28 @@ program MJProgram
 int a;
 
 class Broj {
-	int a, b, c;
+	int a[], b, c;
 	char ch;
 	
 	{
-		void meth(int var, char c) bool t; {
-		
+		void meth(int var, char c) {
+			print(var);
+			print(c);
 		}
 	}
 }
 
 {
 
-	void main() Broj broj1; Broj broj2; {
+	void meth(int a) int b; {print(a);}
+
+	void main() Broj broj; char c;{
 		
-		broj1 = new Broj;
-		broj2 = new Broj;
+		broj = new Broj;
 		
-		broj2.a = 3*2;
+		broj.b = 2;
 		
-		broj1.a = broj2.a;
-		broj1.b = 1;
-		print(broj1.a);
+		broj.meth(broj.b, 'c');
 		
 		return;
 	}

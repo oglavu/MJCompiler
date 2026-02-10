@@ -218,7 +218,7 @@ ActParamMore ::=	(ActParamMore_list) COMMA ActParam ActParamMore
 
 ActParam ::= (ActParam) Expr;
 
-MethodInvokeName ::=	(MethodInvokeName) IDENT;
+MethodInvokeName ::=	(MethodInvokeName) Designator;
 
 // --------------- Statement ---------------
 
