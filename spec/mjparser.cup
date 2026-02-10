@@ -66,12 +66,12 @@ nonterminal ExprNoTernary;
 nonterminal SwitchExpr, CaseDeclList, CaseDecl, CaseNum;
 nonterminal ForInitStatement, ForCondition, ForStepStatement, ForBodyStatement;
 nonterminal Else, StatementThen, StatementElse;
-nonterminal ClassDecl, ClassName, AbstractAtr, ExtendsAtr, FieldDeclList, ClassMethodBlock, ClassMethodList;
+nonterminal ClassDecl, ClassName, AbstractAtr, ExtendsAtr, FieldDeclList, ClassMethodBlock, ClassMethodList, ClassMethodDecl;
 nonterminal Assignop, Addop, Mulop, Relop;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm, CondFactList, CondFact;
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MethodName, MethodInvokeName;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MethodName, MethodInvokeName, AbsMethodName;
 
 precedence left ELSE;
 
@@ -149,10 +149,17 @@ ClassMethodBlock ::=	(ClassMethodBlock_list) LBRACE ClassMethodList RBRACE
 						(ClassMethodBlock_e) /* epsilon */
 						;
 	
-ClassMethodList ::=	(ClassMethodList_list) ClassMethodList AbstractAtr MethodDecl
+ClassMethodList ::=	(ClassMethodList_list) ClassMethodList ClassMethodDecl
 					|
 					(ClassMethodList_e) /* epsilon */
 					;
+
+ClassMethodDecl ::=	(ClassMethodDecl_meth) MethodDecl
+					|
+					(ClassMethodDecl_abs) ABSTRACT MethodRet AbsMethodName LPAREN FormParamList RPAREN SEMI
+					;
+					
+AbsMethodName ::=	(AbsMethodName) IDENT;
 
 // --------------- Enum ---------------
 				

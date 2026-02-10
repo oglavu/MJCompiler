@@ -2,10 +2,10 @@ program MJProgram
 
 int a;
 
-class Type1 {
+abstract class Type1 {
 
 	{
-		void methA() {print(1);}
+		abstract void methA();
 		void methB() {print(1);}
 	}
 }
@@ -13,6 +13,7 @@ class Type1 {
 class Type2 extends Type1 {
 
 	{
+		void methA() {}
 		void methB() {print(2);}
 		void methC() {print(2);}
 	}
@@ -20,9 +21,9 @@ class Type2 extends Type1 {
 
 {
 
-	void main() int b; {
+	void main() Type2 t; {
 		
-		b = a;
+		t = new Type2;
 		
 		return;
 	}

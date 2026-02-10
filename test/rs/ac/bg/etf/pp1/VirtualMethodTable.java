@@ -14,6 +14,8 @@ public class VirtualMethodTable {
 	private static HashMap<Obj, ArrayList<Obj>> methodVT = new HashMap<Obj, ArrayList<Obj>>();
 	private static HashMap<Obj, Integer> tableStart = new HashMap<Obj, Integer>();
 	
+	public static int ABSTRACT_METH_ADR = -1;
+	
 	private static void putDW(int value, int address) {
 		Code.put(Code.const_);
 		Code.put4(value);
@@ -42,7 +44,6 @@ public class VirtualMethodTable {
 	}
 	
 	public static void generateCode() {
-		
 		for (HashMap.Entry<Obj, ArrayList<Obj>> entry : methodVT.entrySet()) {
 			tableStart.put(entry.getKey(), Code.dataSize);
 			ArrayList<Obj> table = entry.getValue();
@@ -50,9 +51,16 @@ public class VirtualMethodTable {
 				addMethodEntry(table.get(i).getName(), table.get(i).getAdr());
 			}
 		}
-		
 		addTableTerminator();
-		
+	}
+	
+	public static ArrayList<String> getAbsMeths(Obj classObj) {
+		ArrayList<Obj> table = methodVT.get(classObj);
+		ArrayList<String> absMeths = new ArrayList<String>();
+		for (Obj meth : table)
+			if (meth.getAdr() == ABSTRACT_METH_ADR)
+				absMeths.add(meth.getName());
+		return absMeths;
 	}
 	
 	private static void addNameTerminator() { 

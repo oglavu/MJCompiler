@@ -26,6 +26,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		currentMethod,
 		currentProgam;
 	private boolean returnHappend;
+	private ArrayList<Obj> abstractClasses = new ArrayList<Obj>();
 
 	public int getnVars() {
 		return nVars;
@@ -79,9 +80,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(MethodName methodName) {
-		
 		Obj obj = Tab.currentScope().findSymbol(methodName.getI1());
-		
 		if (obj != null) {
 			report_error("Dvostruka definicija metode " + methodName.getI1() + " unutar klase " + currentClass.getName(), methodName);
 			methodName.obj = Tab.noObj;
@@ -102,8 +101,31 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (this.currentClass != null) {
 			VirtualMethodTable.putEntry(currentClass, obj);
 		}
-		
 		this.currentMethod = methodName.obj = obj;
+		Tab.openScope();
+	}
+	
+	@Override
+	public void visit(AbsMethodName absMethodName) {
+		
+		if (abstractClasses.contains(currentClass)) {
+			report_error("Apstraktna metoda " + absMethodName.getI1() + " unutar konkretne klase " + currentClass.getName(), absMethodName);
+		}
+		
+		Obj obj = Tab.currentScope().findSymbol(absMethodName.getI1());
+		if (obj != null) {
+			report_error("Dvostruka definicija apstraktne metode " + absMethodName.getI1() + " unutar klase " + currentClass.getName(), absMethodName);
+			absMethodName.obj = Tab.noObj;
+			return;
+		}
+		
+		obj = Tab.insert(Obj.Meth, absMethodName.getI1() , currentType);
+		obj.setAdr(VirtualMethodTable.ABSTRACT_METH_ADR); // apstraktna
+		obj.setLevel(0);
+		
+		VirtualMethodTable.putEntry(currentClass, obj);
+		
+		this.currentMethod = absMethodName.obj = obj;
 		Tab.openScope();
 	}
 	
@@ -151,8 +173,19 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Tab.chainLocalSymbols(currentMethod);
 		Tab.closeScope();
 		
-		returnHappend = false;
-		formParamCnt = 0;
+		this.currentMethod = null;
+		this.returnHappend = false;
+		this.formParamCnt = 0;
+	}
+	
+	@Override
+	public void visit(ClassMethodDecl_abs classMethodDecl_abs) {
+		Tab.chainLocalSymbols(currentMethod);
+		Tab.closeScope();
+		
+		this.currentMethod = null;
+		this.currentType = null;
+		this.formParamCnt = 0;
 	}
 	
 	@Override
@@ -182,8 +215,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		this.currentClass.getType().setElementType(currentType);
 		VirtualMethodTable.newTable(parentObj, this.currentClass);
-
-		
 	}
 	
 	@Override
@@ -193,6 +224,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(ClassDecl classDecl) {
+		if (classDecl.getAbstractAtr() instanceof AbstractAtr_abs) {
+			 this.abstractClasses.add(currentClass);
+		} else { // klasa nije deklarisana kao apstraktna
+			ArrayList<String> absMeths = VirtualMethodTable.getAbsMeths(currentClass);
+			if (!absMeths.isEmpty()) { // ima apstraktne metode
+				for (String str : absMeths)
+					report_error("Apstraktna metoda " + str + " u konkretnoj klasi " +currentClass.getName(), classDecl);
+			}
+		}
+		
 		Tab.chainLocalSymbols(currentClass.getType());
 		Tab.closeScope();
 		
@@ -564,9 +605,21 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(FactorSub_new factorSub_new) {
 		Obj obj = Tab.find(factorSub_new.getType().getI1());
 		if (obj != Tab.noObj) {
-			factorSub_new.struct = obj.getType();
+			if (obj.getName().equals("int")
+					|| obj.getName().equals("bool")
+					|| obj.getName().equals("char")
+			) {
+				report_error("Operator new se ne koristi za osnovne tipove int/char/bool.", factorSub_new);
+				factorSub_new.struct = Tab.noType;
+			} else if (abstractClasses.contains(obj)){
+				report_error("Konstrukcija apstraktnog tipa: " + obj.getName(), factorSub_new);
+				factorSub_new.struct = Tab.noType;
+			} else {
+				factorSub_new.struct = obj.getType();
+			}
 		} else {
 			report_error("Nepostojeci tip dodele.", factorSub_new);
+			factorSub_new.struct = Tab.noType;
 		}
 	}
 	
