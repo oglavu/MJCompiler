@@ -1,6 +1,8 @@
 package rs.ac.bg.etf.pp1;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Stack;
 
 import org.apache.log4j.Logger;
@@ -24,7 +26,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		currentMethod,
 		currentProgam;
 	private boolean returnHappend;
-	
+
 	public int getnVars() {
 		return nVars;
 	}
@@ -77,17 +79,31 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(MethodName methodName) {
-		methodName.obj = Tab.insert(Obj.Meth, methodName.getI1() , currentType);
-		methodName.obj.setLevel(0);
+		
+		Obj obj = Tab.currentScope().findSymbol(methodName.getI1());
+		
+		if (obj != null) {
+			report_error("Dvostruka definicija metode " + methodName.getI1() + " unutar klase " + currentClass.getName(), methodName);
+			methodName.obj = Tab.noObj;
+			return;
+		}
+		
+		obj = Tab.insert(Obj.Meth, methodName.getI1() , currentType);
+		obj.setLevel(0);
 		if (methodName.getI1().equals("main")) {
 			if (currentType != Tab.noType) {
-				currentMethod = methodName.obj = Tab.noObj;
+				obj = Tab.noObj;
 				report_error("Main metoda mora imati povratni tip void.", methodName);
 			} else {
-				mainMethod = methodName.obj;
+				this.mainMethod = obj;
 			}
 		}
-		currentMethod = methodName.obj;
+		
+		if (this.currentClass != null) {
+			VirtualMethodTable.putEntry(currentClass, obj);
+		}
+		
+		this.currentMethod = methodName.obj = obj;
 		Tab.openScope();
 	}
 	
@@ -148,6 +164,31 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			this.currentClass = Tab.insert(Obj.Type, className.getI1(), new Struct(Struct.Class));
 			Tab.openScope();
 		}
+	}
+	
+	@Override
+	public void visit(ExtendsAtr_ext extendsAtr_ext) {
+		if (currentClass == null || currentClass == Tab.noObj) {
+			report_error("Neadekvatno izvodjenje klase " + currentClass.getName(), extendsAtr_ext);
+			return;
+		}
+		
+		Obj parentObj = Tab.find(extendsAtr_ext.getType().getI1());
+		
+		if (parentObj == null || parentObj == Tab.noObj) {
+			report_error("Nedefinisan tip osnovne klase za izvedenu klasu " + currentClass.getName(), extendsAtr_ext);
+			return;
+		}
+		
+		this.currentClass.getType().setElementType(currentType);
+		VirtualMethodTable.newTable(parentObj, this.currentClass);
+
+		
+	}
+	
+	@Override
+	public void visit(ExtendsAtr_e extendsAtr_e) {
+		VirtualMethodTable.newTable(null, this.currentClass);
 	}
 	
 	@Override

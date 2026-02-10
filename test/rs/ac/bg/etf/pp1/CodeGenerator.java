@@ -58,6 +58,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(MethodName methodName) {
 		if (methodName.getI1().equals("main")) {
+			VirtualMethodTable.generateCode();
 			mainPc = Code.pc;
 		}
 		

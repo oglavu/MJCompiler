@@ -66,6 +66,7 @@ public class Compiler {
 			
 			SemanticAnalyzer sa = new SemanticAnalyzer();
 			prog.traverseBottomUp(sa);
+			Code.dataSize += sa.getnVars();
 			
 			/* Ispis tabele simbola */
 			log.info("=====================================================================");
@@ -84,9 +85,10 @@ public class Compiler {
 			
 			CodeGenerator cg = new CodeGenerator();
 			prog.traverseBottomUp(cg);
-			Code.dataSize = sa.getnVars();
 			Code.mainPc = cg.getMainPc();
 			Code.write(new FileOutputStream(objFile));
+			
+			VirtualMethodTable.printVMT(sa.log);
 			
 			log.info("Kod izgenerisan.");
 			

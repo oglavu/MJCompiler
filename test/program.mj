@@ -2,29 +2,27 @@ program MJProgram
 
 int a;
 
-class Broj {
-	int a[], b, c;
-	char ch;
-	
+class Type1 {
+
 	{
-		void meth(int var, char c) {
-			print(var);
-			print(c);
-		}
+		void methA() {print(1);}
+		void methB() {print(1);}
+	}
+}
+
+class Type2 extends Type1 {
+
+	{
+		void methB() {print(2);}
+		void methC() {print(2);}
 	}
 }
 
 {
 
-	void meth(int a) int b; {print(a);}
-
-	void main() Broj broj; char c;{
+	void main() int b; {
 		
-		broj = new Broj;
-		
-		broj.b = 2;
-		
-		broj.meth(broj.b, 'c');
+		b = a;
 		
 		return;
 	}
