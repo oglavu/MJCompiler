@@ -57,6 +57,7 @@ public class VirtualMethodTable {
 	public static ArrayList<String> getAbsMeths(Obj classObj) {
 		ArrayList<Obj> table = methodVT.get(classObj);
 		ArrayList<String> absMeths = new ArrayList<String>();
+		if (table == null) return absMeths;
 		for (Obj meth : table)
 			if (meth.getAdr() == ABSTRACT_METH_ADR)
 				absMeths.add(meth.getName());

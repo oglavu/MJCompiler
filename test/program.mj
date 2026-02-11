@@ -1,32 +1,18 @@
 program MJProgram 
 
-int a, b;
-
-class Type1 {
-
-	int a;
-	char b;
-	{
-		void methA() {}
-		void methB() {print(1);}
-	}
-}
-
-class Type2 extends Type1 {
-
-	char c;
-	{
-		void methA() {}
-		void methC() {print(2);}
-	}
+enum Broj {
+	NULA, JEDAN=1, DVA, PET=5 
 }
 
 {
 
-	void main() Type2 t; {
+	void main() Broj broj; int i[]; {
 		
-		t = new Type2;
-		t.methB();
+		i = new int[5];
+		broj = Broj.DVA;
+		i[broj] = 3;
+		
+		print(i[broj]);
 		
 		return;
 	}

@@ -71,7 +71,7 @@ nonterminal Assignop, Addop, Mulop, Relop;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, CondTrueExpr, CondFalseExpr, AddopTermList, MulopFactorList, Literal, Factor, FactorSub, Term, Unary, Type;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Condition, CondTermList, CondTerm, CondFactList, CondFact;
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MethodName, MethodInvokeName, AbsMethodName;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, DsgScopeMore, DsgArrayName, DsgScopeName, DsgScopeArrayName, MethodName, MethodInvokeName, AbsMethodName;
 
 precedence left ELSE;
 
@@ -381,12 +381,28 @@ FactorSub ::= 	(FactorSub_var) Designator
 		   		(FactorSub_expr) LPAREN Expr RPAREN
 		   		;
 		   		
-Designator ::= 	(Designator_simple) IDENT
+Designator ::= 	(Designator_var) IDENT
 				|
-				(Designator_dot) Designator DOT IDENT
+				(Designator_elem) DsgArrayName LBRACK Expr RBRACK
 				|
-				(Designator_arr) Designator LBRACK Expr RBRACK
+				(Designator_scope) DsgScopeName DsgScopeMore
+				|
+				(Designator_scope_elem) DsgArrayName LBRACK Expr RBRACK DsgScopeMore
 				;
+				
+DsgScopeMore ::= 	(DsgScopeMore_var) DOT IDENT 
+					|
+					(DsgScopeMore_elem) DOT DsgScopeArrayName LBRACK Expr RBRACK 
+					|
+					(DsgScopeMore_scope_var) DsgScopeMore DOT IDENT
+					|
+					(DsgScopeMore_scope_elem) DsgScopeMore DOT DsgScopeArrayName LBRACK Expr RBRACK
+					;
+						
+DsgArrayName ::= (DsgArrayName) IDENT;
+DsgScopeName ::= (DsgScopeName) IDENT;
+DsgScopeArrayName ::= (DsgScopeArrayName) IDENT;
+
 
 Assignop ::= (Assignop) ASSIGN;
 

@@ -76,6 +76,52 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
+	public void visit(DsgArrayName dsgArrayName) {
+		Code.load(dsgArrayName.obj);
+	}
+	
+	@Override
+	public void visit(DsgScopeName dsgScopeName) {
+		if (dsgScopeName.obj.getKind() != Obj.Type)
+			Code.load(dsgScopeName.obj);
+	}
+	
+	@Override
+	public void visit(DsgScopeMore_var dsgScopeMore_var) {		
+		SyntaxNode par = dsgScopeMore_var.getParent();
+		if(par instanceof Designator_scope_elem 
+				|| par instanceof DsgScopeMore_scope_elem)
+			Code.load(dsgScopeMore_var.obj);
+	}
+	
+	@Override
+	public void visit(DsgScopeMore_elem dsgScopeMore_elem) {
+		SyntaxNode parent = dsgScopeMore_elem.getParent();
+		if(parent instanceof DsgScopeMore_scope_var || parent instanceof DsgScopeMore_scope_elem)
+			Code.load(dsgScopeMore_elem.obj);
+	}
+	
+	@Override
+	public void visit(DsgScopeMore_scope_var dsgScopeMore_scope_var) {
+		SyntaxNode parent = dsgScopeMore_scope_var.getParent();
+		if(parent instanceof DsgScopeMore_scope_var || parent instanceof DsgScopeMore_scope_elem)
+			Code.load(dsgScopeMore_scope_var.obj);
+	}
+	
+	@Override
+	public void visit(DsgScopeMore_scope_elem dsgScopeMore_scope_elem) {
+		SyntaxNode parent = dsgScopeMore_scope_elem.getParent();
+		if(parent instanceof DsgScopeMore_scope_var || parent instanceof DsgScopeMore_scope_elem)
+			Code.load(dsgScopeMore_scope_elem.obj);
+	}
+	
+	@Override
+	public void visit(DsgScopeArrayName dsgScopeArrayName) {
+		Code.load(dsgScopeArrayName.obj);
+	}
+	
+	/*
+	@Override
 	public void visit(Designator_simple d) {
 		SyntaxNode parent = d.getParent();
 		if (parent.getClass() != DesignatorStatement_assign.class
@@ -112,7 +158,7 @@ public class CodeGenerator extends VisitorAdaptor {
 			Code.load(d.obj);
 		}
 	}
-	
+	*/
 	@Override
 	public void visit(FactorSub_new factorSub_new) {
 		Code.put(Code.new_);
@@ -139,6 +185,14 @@ public class CodeGenerator extends VisitorAdaptor {
 		if(factor.getUnary() instanceof Unary_m) {
 			Code.put(Code.neg);
 		}
+	}
+	
+	@Override
+	public void visit(FactorSub_var factorSub_var) {
+		if (factorSub_var.getDesignator().obj.getName().equals("arr.length"))
+			Code.put(Code.arraylength);
+		else
+			Code.load(factorSub_var.getDesignator().obj);
 	}
 	
 	@Override
@@ -227,6 +281,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(DesignatorStatement_inc stmt) {
+		Code.load(stmt.getDesignator().obj);
 		if(stmt.getDesignator().obj.getKind() == Obj.Elem) {
 			Code.put(Code.dup2);
 			Code.load(stmt.getDesignator().obj);
@@ -238,6 +293,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(DesignatorStatement_dec stmt) {
+		Code.load(stmt.getDesignator().obj);
 		if(stmt.getDesignator().obj.getKind() == Obj.Elem) {
 			Code.put(Code.dup2);
 			Code.load(stmt.getDesignator().obj);
@@ -277,11 +333,26 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(DesignatorStatement_meth stmt) {
-		int offset = stmt.getMethodInvokeName().obj.getAdr() - Code.pc;
-		Code.put(Code.call);
-		Code.put2(offset);
+		Obj obj = stmt.getMethodInvokeName().obj;
+		if (obj.getKind() == Obj.Meth) {
+			int offset = obj.getAdr() - Code.pc;
+			Code.put(Code.call);
+			Code.put2(offset);
+		} else {
+			/*
+			int tableStart = VirtualMethodTable.getTableAddress(obj.getType());
+			Code.loadConst(tableStart);
+			Code.put(Code.invokevirtual);
+			String methName = ((Designator_dot) stmt.getMethodInvokeName().getDesignator()).getI2();
+			for (int ix = 0; ix < methName.length(); ++ix) {
+				Code.put((int)methName.charAt(ix));
+			}
+			Code.put(Code.const_m1);
+			*/
+		}
 		
-		if(stmt.getMethodInvokeName().obj.getType() != Tab.noType)
+		
+		if(obj.getType() != Tab.noType)
 			Code.put(Code.pop);
 		
 	}
