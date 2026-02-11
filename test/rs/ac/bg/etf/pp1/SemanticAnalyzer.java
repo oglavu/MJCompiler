@@ -83,7 +83,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Obj obj = Tab.currentScope().findSymbol(methodName.getI1());
 		if (obj != null) {
 			report_error("Dvostruka definicija metode " + methodName.getI1() + " unutar klase " + currentClass.getName(), methodName);
-			methodName.obj = Tab.noObj;
+			this.currentMethod = methodName.obj = Tab.noObj;
+			Tab.openScope();
 			return;
 		}
 		
@@ -170,7 +171,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(MethodDecl methodDecl) {
-		Tab.chainLocalSymbols(currentMethod);
+		Tab.chainLocalSymbols(this.currentMethod);
 		Tab.closeScope();
 		
 		this.currentMethod = null;
@@ -180,7 +181,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(ClassMethodDecl_abs classMethodDecl_abs) {
-		Tab.chainLocalSymbols(currentMethod);
+		Tab.chainLocalSymbols(this.currentMethod);
 		Tab.closeScope();
 		
 		this.currentMethod = null;
@@ -198,7 +199,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			Tab.openScope();
 			Obj fld = Tab.insert(Obj.Fld, "__vmtp__", Tab.intType);
 			fld.setAdr(this.fieldCnt++);
-			fld.setLevel(2);
+			fld.setLevel(1);
 		}
 	}
 	
@@ -218,6 +219,20 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		this.currentClass.getType().setElementType(currentType);
 		VirtualMethodTable.newTable(parentObj, this.currentClass);
+		
+		// iz nekog razloga ne radi: this.currentClass.getType().setMembers(parentObj.getType().getMembersTable());
+		for (Obj parentFld : parentObj.getType().getMembers()) {
+			if (parentFld.getKind() == Obj.Meth) break;
+			
+			Obj inheritedFld = Tab.insert(
+				parentFld.getKind(), 
+				parentFld.getName(), 
+				parentFld.getType()
+			);
+			inheritedFld.setAdr(inheritedFld.getAdr());
+			inheritedFld.setLevel(1);
+		}
+		this.fieldCnt = parentObj.getType().getNumberOfFields();
 	}
 	
 	@Override
@@ -263,6 +278,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		if (d == null || d == Tab.noObj) {
 			report_error("Neadekvatan poziv metode.", methodInvokeName);
+			methodInvokeName.obj = Tab.noObj;
 			return;
 		}
 		
@@ -360,9 +376,17 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			if (currentMethod != null) {
 				obj = Tab.insert(Obj.Var, var_var.getI1(), currentType);
 			} else {
-				obj = Tab.insert(Obj.Fld, var_var.getI1(), currentType);
-				obj.setAdr(this.fieldCnt++);
-				obj.setLevel(1);
+				if (currentClass != null) {
+					for (Obj o : this.currentClass.getType().getMembers()) {
+						report_info(o.getName() + " " + o.getAdr(), var_var);
+					}
+					obj = Tab.insert(Obj.Fld, var_var.getI1(), currentType);
+					obj.setAdr(this.fieldCnt++);
+					obj.setLevel(1);
+				} else {
+					obj = Tab.insert(Obj.Var, var_var.getI1(), currentType);
+				}
+				
 			}
 		}
 		else{
@@ -378,9 +402,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			if (currentMethod != null) {
 				obj = Tab.insert(Obj.Var, var_arr.getI1(), new Struct(Struct.Array, currentType));
 			} else {
-				obj = Tab.insert(Obj.Fld, var_arr.getI1(), new Struct(Struct.Array, currentType));
-				obj.setAdr(this.fieldCnt++);
-				obj.setLevel(1);
+				if (currentClass != null) {
+					obj = Tab.insert(Obj.Fld, var_arr.getI1(), new Struct(Struct.Array, currentType));
+					obj.setAdr(this.fieldCnt++);
+					obj.setLevel(1);
+				} else {
+					obj = Tab.insert(Obj.Var, var_arr.getI1(), currentType);
+				}
 			}
 		
 		}
