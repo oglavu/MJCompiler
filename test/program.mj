@@ -4,6 +4,7 @@ int a;
 
 abstract class Type1 {
 
+	int a;
 	{
 		abstract void methA();
 		void methB() {print(1);}
@@ -12,6 +13,7 @@ abstract class Type1 {
 
 class Type2 extends Type1 {
 
+	char c;
 	{
 		void methA() {}
 		void methB() {print(2);}
@@ -24,6 +26,7 @@ class Type2 extends Type1 {
 	void main() Type2 t; {
 		
 		t = new Type2;
+		t.c = 'c';
 		
 		return;
 	}

@@ -196,6 +196,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		} else {
 			this.currentClass = Tab.insert(Obj.Type, className.getI1(), new Struct(Struct.Class));
 			Tab.openScope();
+			Obj fld = Tab.insert(Obj.Fld, "__vmtp__", Tab.intType);
+			fld.setAdr(this.fieldCnt++);
+			fld.setLevel(2);
 		}
 	}
 	
@@ -354,11 +357,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		 Obj obj = Tab.currentScope().findSymbol(var_var.getI1());
 
 		if(obj == null || obj == Tab.noObj) {
-			if (currentClass == null) {
+			if (currentMethod != null) {
 				obj = Tab.insert(Obj.Var, var_var.getI1(), currentType);
 			} else {
 				obj = Tab.insert(Obj.Fld, var_var.getI1(), currentType);
-				obj.setFpPos(++this.fieldCnt);
+				obj.setAdr(this.fieldCnt++);
 				obj.setLevel(1);
 			}
 		}
@@ -372,11 +375,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Obj obj = Tab.currentScope().findSymbol(var_arr.getI1());
 		
 		if(obj == null || obj == Tab.noObj) {
-			if (currentClass == null) {
+			if (currentMethod != null) {
 				obj = Tab.insert(Obj.Var, var_arr.getI1(), new Struct(Struct.Array, currentType));
 			} else {
 				obj = Tab.insert(Obj.Fld, var_arr.getI1(), new Struct(Struct.Array, currentType));
-				obj.setFpPos(++this.fieldCnt);
+				obj.setAdr(this.fieldCnt++);
 				obj.setLevel(1);
 			}
 		
@@ -805,18 +808,35 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		condition.struct = condition.getCondTermList().struct;
 	}
 	
+	private boolean isDerived(Struct c, Struct p) {
+		for (; c != null; c = c.getElemType())
+	        if (c.equals(p))
+	            return true;
+	    return false;
+	}
+	
 	//Designator Statements
 	@Override
 	public void visit(DesignatorStatement_assign designatorStatement_assign) {
 		int kind = designatorStatement_assign.getDesignator().obj.getKind();
+		Obj desObj = designatorStatement_assign.getDesignator().obj;
 		Struct desStruct = designatorStatement_assign.getDesignator().obj.getType(),
 				exprStruct = designatorStatement_assign.getExpr().struct;
 		// TODO: Implementiraj proveru da li je vrednost Expr validna za dati Enum
 		if(kind != Obj.Var && kind != Obj.Elem && kind != Obj.Fld) 
 			report_error("Dodela u neadekvatnu promenljivu: " + designatorStatement_assign.getDesignator().obj.getName(), designatorStatement_assign);
-		else if(!exprStruct.assignableTo(desStruct))
-			if (desStruct.getKind() != Struct.Int || exprStruct.getKind() != Struct.Enum)
+		else if(!exprStruct.assignableTo(desStruct)) {
+			if (desStruct.getKind() == Struct.Class 
+					&& exprStruct.getKind() == Struct.Class
+					&& !isDerived(desStruct, exprStruct)) {
+				report_error("Nije moguce obaviti polimorfnu dodelu promenljivoj " + designatorStatement_assign.getDesignator().obj.getName(), designatorStatement_assign);
+			} else {
+				//designatorStatement_assign.getDesignator().obj = new Obj();
+			}
+			if (desStruct.getKind() != Struct.Int || exprStruct.getKind() != Struct.Enum) {
 				report_error("Tipovi promenljive ("+desStruct.getKind()+") i izraza (" + exprStruct.getKind() + ") su nekompatibilni " + designatorStatement_assign.getDesignator().obj.getName(), designatorStatement_assign);
+			}
+		}
 	}
 	
 	@Override

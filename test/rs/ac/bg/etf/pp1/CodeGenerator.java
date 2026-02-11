@@ -261,6 +261,17 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(DesignatorStatement_assign stmt) {
+		if (stmt.getExpr().struct.getKind() == Struct.Class) {
+			// TODO: Neki bolji uslov?
+			Code.put(Code.dup);
+			Code.loadConst(
+				VirtualMethodTable.getTableAddress(stmt.getExpr().struct)
+			);
+			Code.put(Code.putfield);
+			Code.put2(0); // 0-th field of each class is vmtp
+		}
+		
+		
 		Code.store(stmt.getDesignator().obj);
 	}
 	

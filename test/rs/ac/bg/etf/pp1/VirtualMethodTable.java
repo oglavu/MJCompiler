@@ -5,14 +5,14 @@ import org.apache.log4j.Logger;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import rs.ac.bg.etf.pp1.ast.SyntaxNode;
+import rs.ac.bg.etf.pp1.ast.*;
 import rs.etf.pp1.mj.runtime.Code;
-import rs.etf.pp1.symboltable.concepts.Obj;
+import rs.etf.pp1.symboltable.concepts.*;
 
 public class VirtualMethodTable {
 
 	private static HashMap<Obj, ArrayList<Obj>> methodVT = new HashMap<Obj, ArrayList<Obj>>();
-	private static HashMap<Obj, Integer> tableStart = new HashMap<Obj, Integer>();
+	private static HashMap<Struct, Integer> tableStart = new HashMap<Struct, Integer>();
 	
 	public static int ABSTRACT_METH_ADR = -1;
 	
@@ -45,7 +45,7 @@ public class VirtualMethodTable {
 	
 	public static void generateCode() {
 		for (HashMap.Entry<Obj, ArrayList<Obj>> entry : methodVT.entrySet()) {
-			tableStart.put(entry.getKey(), Code.dataSize);
+			tableStart.put(entry.getKey().getType(), Code.dataSize);
 			ArrayList<Obj> table = entry.getValue();
 			for (int i=0; i<table.size(); ++i) {
 				addMethodEntry(table.get(i).getName(), table.get(i).getAdr());
@@ -61,6 +61,10 @@ public class VirtualMethodTable {
 			if (meth.getAdr() == ABSTRACT_METH_ADR)
 				absMeths.add(meth.getName());
 		return absMeths;
+	}
+	
+	public static int getTableAddress(Struct s) {
+		return tableStart.get(s);
 	}
 	
 	private static void addNameTerminator() { 
@@ -85,7 +89,7 @@ public class VirtualMethodTable {
 	
 	public static void printVMT(Logger log) {
 		for (HashMap.Entry<Obj, ArrayList<Obj>> entry : methodVT.entrySet()) {
-			int tabStart = tableStart.get(entry.getKey()).intValue();
+			int tabStart = tableStart.get(entry.getKey().getType()).intValue();
 			report_info(log, entry.getKey().getName() + "\t" + tabStart, null);
 			for (Obj meth : entry.getValue()) {
 				report_info(log, "\t" + meth.getName() + " " + meth.getAdr(), null);
