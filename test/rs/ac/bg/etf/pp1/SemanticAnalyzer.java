@@ -439,6 +439,15 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		currentType = Tab.noType;
 	}
 	
+	private Obj searchLocals(Struct scopeHolder, String targetName) {
+		for (Obj sym : scopeHolder.getMembers()) {
+			if (sym.getName().equals(targetName)) {
+				return sym;
+			}
+		}
+		return null;
+	}
+	
 	//Designator
 	@Override
 	public void visit(Designator_var designator_var) {
@@ -475,9 +484,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	@Override
+	public void visit(DsgScopeArrayName dsgScopeArrayName) { }
+	
+	@Override
 	public void visit(Designator_elem designator_elem) {
 		Obj obj = designator_elem.getDsgArrayName().obj;
-		if(obj == Tab.noObj) {
+		if(obj == Tab.noObj || obj == null) {
 			report_error("Nevalidan tip niza " + obj.getName(), designator_elem);
 			obj = Tab.noObj;
 		} else if(!designator_elem.getExpr().struct.equals(Tab.intType)
@@ -485,6 +497,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("Indeks niza nije tipa int/enum.", designator_elem);
 			obj = Tab.noObj;
 		} else {
+			designator_elem.getDsgArrayName().obj = obj;
 			obj = new Obj(Obj.Elem, obj.getName() + ".element", obj.getType().getElemType());
 		}
 		designator_elem.obj = obj;
@@ -515,6 +528,24 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		dsgScopeName.obj = obj;
 		currentType = obj.getType();
+	}
+	
+	@Override
+	public void visit(DsgScopeElem dsgScopeElem) {
+		Obj obj = dsgScopeElem.getDsgArrayName().obj;
+		if(obj == Tab.noObj || obj == null) {
+			obj = Tab.noObj;
+		} else if(dsgScopeElem.getExpr().struct != Tab.intType
+				&& dsgScopeElem.getExpr().struct.getKind() != Struct.Enum) {
+			report_error("Indeks niza nije tipa int/enum.", dsgScopeElem);
+			obj = Tab.noObj;
+		} else {
+			dsgScopeElem.getDsgArrayName().obj = obj;
+			obj =  new Obj(Obj.Elem, obj.getName() + ".element", obj.getType().getElemType());			
+		}
+		
+		dsgScopeElem.obj = obj;
+		this.currentType = obj.getType();
 	}
 	
 	@Override
@@ -549,17 +580,18 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				&& dsgScopeMore_elem.getExpr().struct.getKind() != Struct.Enum) {
 			report_error("Indeks niza nije tipa int/enum.", dsgScopeMore_elem);
 			obj = Tab.noObj;
-		}
-		else {
+		} else {
 			String fieldName = dsgScopeMore_elem.getDsgScopeArrayName().getI1();
 			obj = this.searchLocals(scope, fieldName);
 			if (obj == null) {
 				report_error("Neadekvatan pristup polju tipa niz: " + fieldName, dsgScopeMore_elem);
 				obj = Tab.noObj;
 			} else {
+				dsgScopeMore_elem.getDsgScopeArrayName().obj = obj;
 				obj = new Obj(Obj.Elem, obj.getName() + ".element", obj.getType().getElemType());
 			}
 		}
+		
 		dsgScopeMore_elem.obj = obj;
 		this.currentType = null;
 	}
@@ -604,107 +636,14 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				report_error("Neadekvatan pristup polju tipa niz: " + fieldName, dsgScopeMore_scope_elem);
 				dsgScopeMore_scope_elem.obj = Tab.noObj;
 			} else {
+				dsgScopeMore_scope_elem.getDsgScopeArrayName().obj = obj;
 				obj = new Obj(Obj.Elem, obj.getName() + ".element", obj.getType().getElemType());
 			}
 		}
+		dsgScopeMore_scope_elem.obj = obj;
+		this.currentType = obj.getType();
 	}
 	
-	/*
-	//Designator
-	@Override
-	public void visit(Designator_simple designator_simple) {
-		Obj obj = Tab.find(designator_simple.getI1());
-		if(obj == Tab.noObj) {
-			report_error("Pristup nedefinisanoj promenljivi: " + designator_simple.getI1(), designator_simple);
-			designator_simple.obj = Tab.noObj;
-		}
-		else if(obj.getKind() != Obj.Var && obj.getKind() != Obj.Con && obj.getKind() != Obj.Meth && obj.getKind() != Obj.Type) {
-			report_error("Neadekvatna promenljiva: " + designator_simple.getI1(), designator_simple);
-			designator_simple.obj = Tab.noObj;
-		}
-		else {
-			designator_simple.obj = obj;
-		}
-	}
-	*/
-	private Obj searchLocals(Struct scopeHolder, String targetName) {
-		for (Obj sym : scopeHolder.getMembers()) {
-			if (sym.getName().equals(targetName)) {
-				return sym;
-			}
-		}
-		return null;
-	}
-	/*
-	public void visit(Designator_dot designator_dot) {
-		Obj obj = designator_dot.getDesignator().obj;
-		String designatorName = obj.getName();
-		String memberName = designator_dot.getI2();
-		SyntaxNode parent = designator_dot.getParent();
-		if (obj.getType().getKind() == Struct.Enum) {
-			obj = this.searchLocals(obj, memberName);
-			if (obj == null || obj == Tab.noObj) {
-				report_error("Ime " + memberName + " nije clan nabrajanja" + designatorName, designator_dot);
-				designator_dot.obj = Tab.noObj;
-			} else {
-				designator_dot.obj = obj;
-			}
-		} else if (obj.getType().getKind() == Struct.Array) {
-			if (memberName.equals("length")) {
-				designator_dot.obj = new Obj(Obj.Con, "arr.len", Tab.intType);
-			} else {
-				report_error("Ime " + designatorName + " je tipa niz. Ne sadrzi clan " + memberName, designator_dot);
-				designator_dot.obj = Tab.noObj;
-			}
-		} else if (obj.getType().getKind() == Struct.Class) {
-			if (parent.getClass() == MethodInvokeName.class) {
-				obj = designator_dot.getDesignator().obj;
-			} else {
-				obj = this.searchLocals(obj, memberName);
-			}
-			if (obj == null || obj == Tab.noObj) {
-				report_error("Ime " + memberName + " nije clan klase " + designatorName, designator_dot);
-				designator_dot.obj = Tab.noObj;
-			} else {
-				designator_dot.obj = obj;
-			}
-		} else {
-			report_error("Nedefinisano ime tipa: " + designatorName, designator_dot);
-			designator_dot.obj = Tab.noObj;
-		}
-	}
-	
-	@Override
-	public void visit(Designator_arr designator_arr) {
-		Obj arrObj = Tab.find(designator_arr.getDesignator().obj.getName());
-		Struct exprStruct = designator_arr.getExpr().struct;
-		if(arrObj == Tab.noObj) {
-			report_error("Pristup nedefinisanoj promenljivi niza: " + designator_arr.getDesignator().obj.getName(), designator_arr);
-			designator_arr.obj = Tab.noObj;
-		}
-		else if(arrObj.getType().getKind() == Struct.Array) {
-			if (exprStruct == Tab.noType) {
-				report_error("Neadekvatan indeks niza: " + designator_arr.getDesignator(), designator_arr);
-				designator_arr.obj = Tab.noObj;
-			} 
-			else if (exprStruct == Tab.intType) {
-				designator_arr.obj = new Obj(Obj.Elem, arrObj.getName() + ".element", arrObj.getType().getElemType());
-			} 
-			else if (exprStruct.getKind() == Struct.Enum) {
-				report_info("Implicitna konverzija tipa enum u tip int.", designator_arr);
-				designator_arr.obj = new Obj(Obj.Elem, arrObj.getName() + ".element", arrObj.getType().getElemType());
-			}
-			else {
-				report_error("Neadekvatan tip indeksa niza: " + designator_arr.getDesignator(), designator_arr);
-				designator_arr.obj = Tab.noObj;
-			}
-		}
-		else {
-			report_error("Neadekvatna promenljiva niza: " + designator_arr.getDesignator(), designator_arr);
-			designator_arr.obj = Tab.noObj;
-		}
-	}
-	*/
 	//Enum
 	public void visit(EnumName enumName) {
 		Obj obj = Tab.currentScope().findSymbol(enumName.getI1());
@@ -1021,25 +960,33 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	//Designator Statements
 	@Override
 	public void visit(DesignatorStatement_assign designatorStatement_assign) {
-		int kind = designatorStatement_assign.getDesignator().obj.getKind();
 		Obj desObj = designatorStatement_assign.getDesignator().obj;
-		Struct desStruct = designatorStatement_assign.getDesignator().obj.getType(),
+		
+		//if (desObj == null) return;
+		
+		int kind = desObj.getKind();
+		Struct desStruct = desObj.getType(),
 				exprStruct = designatorStatement_assign.getExpr().struct;
-		// TODO: Implementiraj proveru da li je vrednost Expr validna za dati Enum
-		if(kind != Obj.Var && kind != Obj.Elem && kind != Obj.Fld) 
+		
+		if(kind != Obj.Var && kind != Obj.Elem && kind != Obj.Fld) {
 			report_error("Dodela u neadekvatnu promenljivu: " + designatorStatement_assign.getDesignator().obj.getName(), designatorStatement_assign);
-		else if(!exprStruct.assignableTo(desStruct)) {
-			if (desStruct.getKind() == Struct.Class 
-					&& exprStruct.getKind() == Struct.Class
-					&& !isDerived(desStruct, exprStruct)) {
-				report_error("Nije moguce obaviti polimorfnu dodelu promenljivoj " + designatorStatement_assign.getDesignator().obj.getName(), designatorStatement_assign);
-			} else {
-				if (desStruct.getKind() != Struct.Int || exprStruct.getKind() != Struct.Enum) {
-					report_error("Tipovi promenljive ("+desStruct.getKind()+") i izraza (" + exprStruct.getKind() + ") su nekompatibilni " + designatorStatement_assign.getDesignator().obj.getName(), designatorStatement_assign);
-				}
-			}
-			
+			return;
 		}
+			
+		if(exprStruct.assignableTo(desStruct))
+			return;
+		
+		if (desStruct.getKind() == Struct.Class 
+				&& exprStruct.getKind() == Struct.Class
+				&& isDerived(exprStruct, desStruct)) {
+			report_info("Polimorfna dodela ", designatorStatement_assign);
+			return;
+		}
+		
+		if (desStruct.getKind() == Struct.Int && exprStruct.getKind() == Struct.Enum)
+			return;
+		
+		report_error("Nemoguca dodela", designatorStatement_assign);
 	}
 	
 	@Override

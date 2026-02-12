@@ -87,6 +87,11 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
+	public void visit(DsgScopeElem dsgScopeElem) {
+		Code.load(dsgScopeElem.obj);
+	}
+	
+	@Override
 	public void visit(DsgScopeMore_var dsgScopeMore_var) {		
 		SyntaxNode par = dsgScopeMore_var.getParent();
 		if(par instanceof Designator_scope_elem 

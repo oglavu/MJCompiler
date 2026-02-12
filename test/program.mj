@@ -1,18 +1,37 @@
 program MJProgram 
 
-enum Broj {
-	NULA, JEDAN=1, DVA, PET=5 
+
+class Broj { int val[]; }
+
+class Base {
+	Broj brojevi[];
+	int f1[], f2; { }
+}
+
+class Derived extends Base {
+	int f3;
 }
 
 {
 
-	void main() Broj broj; int i[]; {
+	void main() Base b; int niz[], x;{
 		
-		i = new int[5];
-		broj = Broj.DVA;
-		i[broj] = 3;
+		x = 2;
+		print(x);				// 2
 		
-		print(i[broj]);
+		niz = new int[5];
+		niz[2] = 4;
+		print(niz[2]);			// 4
+		print(niz[x+1]);		// 0
+		
+		
+		
+		b = new Derived;
+		b.f1 = new int[3];
+		b.brojevi = new Broj[2];
+		b.brojevi[0] = new Broj;
+		b.brojevi[0].val = new int[2];
+		b.brojevi[0].val[1] = 1;
 		
 		return;
 	}
