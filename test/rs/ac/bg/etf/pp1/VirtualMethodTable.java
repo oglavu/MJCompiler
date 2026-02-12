@@ -15,6 +15,7 @@ public class VirtualMethodTable {
 	private static HashMap<Struct, Integer> tableStart = new HashMap<Struct, Integer>();
 	
 	public static int ABSTRACT_METH_ADR = -1;
+	public static String VMTP_FIELD = "__vmtp__";
 	
 	private static void putDW(int value, int address) {
 		Code.put(Code.const_);
@@ -50,8 +51,8 @@ public class VirtualMethodTable {
 			for (int i=0; i<table.size(); ++i) {
 				addMethodEntry(table.get(i).getName(), table.get(i).getAdr());
 			}
+			addTableTerminator();
 		}
-		addTableTerminator();
 	}
 	
 	public static ArrayList<String> getAbsMeths(Obj classObj) {

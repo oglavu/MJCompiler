@@ -58,8 +58,8 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(MethodName methodName) {
 		if (methodName.getI1().equals("main")) {
+			mainPc = Code.pc; // napuni staticku memoriju pre pocetka maina!!
 			VirtualMethodTable.generateCode();
-			mainPc = Code.pc;
 		}
 		
 		methodName.obj.setAdr(Code.pc);
@@ -125,45 +125,6 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.load(dsgScopeArrayName.obj);
 	}
 	
-	/*
-	@Override
-	public void visit(Designator_simple d) {
-		SyntaxNode parent = d.getParent();
-		if (parent.getClass() != DesignatorStatement_assign.class
-				// e.g. arr = new int[10]; Sluzi da se levi arr ne pushuje
-				&& (parent.getClass() != Statement_read.class || d.obj.getType().getKind() == Struct.Array)
-				// e.g. read(a); Ne treba pushovati a na stek; To se resava Obj-ovima
-				&& d.obj.getKind() != Obj.Meth
-				// e.g. m(); Ne treba da pushuje m kao ime metode
-				&& d.obj.getKind() != Obj.Type
-				// e.g. x = EnumName.ELEM; pokusao bi load od EnumName
-				&& (parent.getClass() != Designator_dot.class || parent.getParent().getClass() != MethodInvokeName.class)
-				
-		){
-			Code.load(d.obj);	
-		}
-	}
-	
-	@Override
-	public void visit(Designator_dot d) {
-		SyntaxNode parent = d.getParent();
-		if (d.obj.getName().equals("arr.len")) {
-			Code.put(Code.arraylength);
-		} else if (parent.getClass() != DesignatorStatement_assign.class 
-				&& parent.getClass() != MethodInvokeName.class){
-			Code.load(d.obj);
-		}
-	}
-	
-	@Override
-	public void visit(Designator_arr d) {
-		SyntaxNode parent = d.getParent();
-		if (parent.getClass() != DesignatorStatement_assign.class
-				&& parent.getClass() != Statement_read.class) {
-			Code.load(d.obj);
-		}
-	}
-	*/
 	@Override
 	public void visit(FactorSub_new factorSub_new) {
 		Code.put(Code.new_);
@@ -172,9 +133,36 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(FactorSub_meth factorSub_meth) {
-		int offset = factorSub_meth.getMethodInvokeName().obj.getAdr() - Code.pc;
-		Code.put(Code.call);
-		Code.put2(offset);
+		Obj obj = factorSub_meth.getMethodInvokeName().getDesignator().obj;
+		if (obj.getFpPos() == 0) {
+			int offset = factorSub_meth.getMethodInvokeName().obj.getAdr() - Code.pc;
+			Code.put(Code.call);
+			Code.put2(offset);
+		} else {
+			// klasna
+		
+			// dohvati __vmtp__
+			Code.put(Code.dup);
+			Code.put(Code.getfield);
+			Code.put2(0);
+		
+			// pozovi virtuelnu metodu
+			Code.put(Code.invokevirtual);
+			String methName = factorSub_meth.getMethodInvokeName().getDesignator().obj.getName();
+			for (int ix = 0; ix < methName.length(); ++ix) {
+				Code.put4((int)methName.charAt(ix));
+			}
+			Code.put4(-1);
+		
+			// sklanjanje this
+			if (Tab.noType == factorSub_meth.getMethodInvokeName().getDesignator().obj.getType()) {
+				Code.put(Code.pop);
+			} else {
+				Code.put(Code.dup_x1);
+				Code.put(Code.pop);
+				Code.put(Code.pop);
+			}
+		}
 	}
 	
 	@Override
@@ -339,23 +327,30 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(DesignatorStatement_meth stmt) {
 		Obj obj = stmt.getMethodInvokeName().obj;
-		if (obj.getKind() == Obj.Meth) {
+		if (obj.getFpPos() == 0) {
+			// globalna
 			int offset = obj.getAdr() - Code.pc;
 			Code.put(Code.call);
 			Code.put2(offset);
 		} else {
-			/*
-			int tableStart = VirtualMethodTable.getTableAddress(obj.getType());
-			Code.loadConst(tableStart);
+			// klasna
+			
+			// dohvati __vmtp__
+			Code.put(Code.dup);
+			Code.put(Code.getfield);
+			Code.put2(0);
+			
+			// pozovi virtuelnu metodu
 			Code.put(Code.invokevirtual);
-			String methName = ((Designator_dot) stmt.getMethodInvokeName().getDesignator()).getI2();
+			String methName = stmt.getMethodInvokeName().getDesignator().obj.getName();
 			for (int ix = 0; ix < methName.length(); ++ix) {
-				Code.put((int)methName.charAt(ix));
+				Code.put4((int)methName.charAt(ix));
 			}
-			Code.put(Code.const_m1);
-			*/
+			Code.put4(-1);
+			
+			// sklanjanje this
+			Code.put(Code.pop);
 		}
-		
 		
 		if(obj.getType() != Tab.noType)
 			Code.put(Code.pop);

@@ -90,10 +90,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		obj = Tab.insert(Obj.Meth, methodName.getI1() , currentType);
 		obj.setLevel(0);
+		obj.setFpPos(0);
 		if (methodName.getI1().equals("main")) {
 			if (currentType != Tab.noType) {
-				obj = Tab.noObj;
 				report_error("Main metoda mora imati povratni tip void.", methodName);
+				obj = Tab.noObj;
 			} else {
 				this.mainMethod = obj;
 			}
@@ -101,6 +102,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		if (this.currentClass != null) {
 			VirtualMethodTable.putEntry(currentClass, obj);
+			obj.setFpPos(1);
 		}
 		this.currentMethod = methodName.obj = obj;
 		Tab.openScope();
@@ -197,7 +199,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		} else {
 			this.currentClass = Tab.insert(Obj.Type, className.getI1(), new Struct(Struct.Class));
 			Tab.openScope();
-			Obj fld = Tab.insert(Obj.Fld, "__vmtp__", Tab.intType);
+			Obj fld = Tab.insert(Obj.Fld, VirtualMethodTable.VMTP_FIELD, Tab.intType);
 			fld.setAdr(this.fieldCnt++);
 			fld.setLevel(1);
 		}
@@ -244,9 +246,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(ClassDecl classDecl) {
 		if (classDecl.getAbstractAtr() instanceof AbstractAtr_abs) {
 			 this.abstractClasses.add(currentClass);
-		} else { // klasa nije deklarisana kao apstraktna
+		} else { 
+			// klasa nije deklarisana kao apstraktna
 			ArrayList<String> absMeths = VirtualMethodTable.getAbsMeths(currentClass);
-			if (!absMeths.isEmpty()) { // ima apstraktne metode
+			if (!absMeths.isEmpty()) { 
+				// ima apstraktne metode
 				for (String str : absMeths)
 					report_error("Apstraktna metoda " + str + " u konkretnoj klasi " +currentClass.getName(), classDecl);
 			}
@@ -273,27 +277,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(MethodInvokeName methodInvokeName) {
-		Obj d = methodInvokeName.getDesignator().obj;
-		Obj obj = null;
-		
-		if (d == null || d == Tab.noObj) {
-			report_error("Neadekvatan poziv metode.", methodInvokeName);
-			methodInvokeName.obj = Tab.noObj;
-			return;
-		}
-		
-		if (d.getKind() == Obj.Meth) {
-			// from designator_simple
-			// class method
-			obj = d;
-		} else {
-			// global method
-			obj = Tab.currentScope().findSymbol(d.getName());
-		}
-		
+		Obj obj = methodInvokeName.getDesignator().obj;
 		
 		if (obj == null || obj == Tab.noObj) {
-			report_error("Poziv nedefinisane metode: "+d.getName(), methodInvokeName);
+			report_error("Poziv nedefinisane metode: "+obj.getName(), methodInvokeName);
+			obj = Tab.noObj;
+		} else if (obj.getKind() != Obj.Meth) {
+			report_error("Ime "+obj.getName()+" nije ime metode.", methodInvokeName);
 			obj = Tab.noObj;
 		}
 		methodInvokeName.obj = obj;

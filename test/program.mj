@@ -1,37 +1,28 @@
 program MJProgram 
 
-
-class Broj { int val[]; }
-
 class Base {
-	Broj brojevi[];
-	int f1[], f2; { }
+	{
+		void methA() {print('B'); print('A');}
+		int methB() {print('B'); print('B'); return 2;}
+	}
 }
 
 class Derived extends Base {
-	int f3;
+	{
+		void methA() {print('D'); print('A');}
+		void methC() {print('D'); print('C');}
+	}
 }
 
 {
 
-	void main() Base b; int niz[], x;{
-		
-		x = 2;
-		print(x);				// 2
-		
-		niz = new int[5];
-		niz[2] = 4;
-		print(niz[2]);			// 4
-		print(niz[x+1]);		// 0
-		
-		
+	void main() Base b; Derived d; int x; {
 		
 		b = new Derived;
-		b.f1 = new int[3];
-		b.brojevi = new Broj[2];
-		b.brojevi[0] = new Broj;
-		b.brojevi[0].val = new int[2];
-		b.brojevi[0].val[1] = 1;
+		
+		x = b.methB();
+
+		print(x);
 		
 		return;
 	}
