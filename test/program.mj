@@ -1,28 +1,28 @@
 program MJProgram 
 
-class Base {
+class A {
+	int broj;
 	{
-		void methA() {print('B'); print('A');}
-		int methB() {print('B'); print('B'); return 2;}
+		void meth(int broj) {print(broj);}
 	}
 }
 
-class Derived extends Base {
+class B {
+	A a;
 	{
-		void methA() {print('D'); print('A');}
-		void methC() {print('D'); print('C');}
+	int meth(int x, int y, int z) { print(x); return x; } 
+	void call_meth(char c) { meth(ord(c), 2, 3); }
 	}
 }
 
 {
 
-	void main() Base b; Derived d; int x; {
+	void main() B b; A a; int c; {
 		
-		b = new Derived;
-		
-		x = b.methB();
-
-		print(x);
+		b = new B;
+		b.a = new A;
+		//c = meth(2,3);
+		b.call_meth('A');
 		
 		return;
 	}

@@ -16,7 +16,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	private boolean errorDetected = false;
 	Logger log = Logger.getLogger(getClass());
-	private int constant, nxtEnumVal, nVars, formParamCnt, fieldCnt;
+	private int constant, 
+		nxtEnumVal, 
+		nVars, 
+		formParamCnt, 
+		fieldCnt,
+		maxTemps,
+		curTemps;
 	private Struct constantType,
 		currentType,
 		boolType = Tab.find("bool").getType();
@@ -25,7 +31,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		mainMethod, 
 		currentMethod,
 		currentProgam;
-	private boolean returnHappend;
+	private boolean returnHappend,
+		currentClassScope;
 	private ArrayList<Obj> abstractClasses = new ArrayList<Obj>();
 
 	public int getnVars() {
@@ -100,12 +107,18 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			}
 		}
 		
-		if (this.currentClass != null) {
-			VirtualMethodTable.putEntry(currentClass, obj);
-			obj.setFpPos(1);
-		}
 		this.currentMethod = methodName.obj = obj;
 		Tab.openScope();
+		
+		if (this.currentClass != null) {
+			VirtualMethodTable.putEntry(this.currentClass, this.currentMethod);
+			
+			obj = Tab.insert(Obj.Var, "this", this.currentClass.getType());
+			obj.setFpPos(++this.formParamCnt);
+			this.currentMethod.setLevel(1);
+			this.currentMethod.setFpPos(1);
+		}
+		
 	}
 	
 	@Override
@@ -173,12 +186,19 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(MethodDecl methodDecl) {
+		
+		for(int i=this.maxTemps-1; i>=0; --i) {
+			Tab.insert(Obj.Var, "_"+this.currentMethod.getName()+"_tmp_"+i, Tab.intType);
+		}
+		
+		
 		Tab.chainLocalSymbols(this.currentMethod);
 		Tab.closeScope();
 		
 		this.currentMethod = null;
 		this.returnHappend = false;
 		this.formParamCnt = 0;
+		this.maxTemps = 0;
 	}
 	
 	@Override
@@ -287,36 +307,36 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			obj = Tab.noObj;
 		}
 		methodInvokeName.obj = obj;
-		methodCalls.push(new Pair(obj, 1)); // fp krecu od 1
+		methodCalls.push(new Pair(obj, obj.getFpPos() == 0 ? 1 : 2)); // fp krecu od 1
+		if (methodInvokeName.obj.getFpPos() != 0) {
+			// klasna
+			this.curTemps++;
+			if (this.curTemps > this.maxTemps)
+				this.maxTemps = this.curTemps;
+		}
 	}
 	
 	@Override
 	public void visit(ActParam actParam) {
-		if (methodCalls.empty()) {
-			report_error("Nerazresen problem sa imenom metode", actParam);
-			return;
-		}
 		
 		Struct apStruct = actParam.getExpr().struct;
 		Pair method = methodCalls.peek();
 		
+		// TODO: Refactor obavezan
 		if (apStruct == Tab.noType) {
 			report_error("Neadekvatan tip stvarnog parametra na poziciji " + method.fp_ix, actParam);
 		} else {
 			for (Obj fp : method.obj.getLocalSymbols()) {
 				if (fp.getFpPos() == method.fp_ix) {
-					if (fp.getType().getKind() == apStruct.getKind()) {
-						if (apStruct.getKind() == Struct.Array && apStruct.getElemType() != fp.getType().getElemType()) {
-							report_error("Neadekvatan tip elemenata niza stvarnog parametra " + fp.getName() + " metode " + method.obj.getName(), actParam);
-						}
-					}
-					else {
+					if (!apStruct.assignableTo(fp.getType())) {
 						report_error("Neadekvatan tip stvarnog parametra " + fp.getName() + " metode " + method.obj.getName(), actParam);
+						method.obj = Tab.noObj;
 					}
 					method.fp_ix++;
-					break;
+					return;
 				}
 			}
+			report_error("Vise stvarnih parametara nego formalnih.", actParam);
 		}
 		
 	}
@@ -360,26 +380,34 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	/* VAR DECLARATIONS */
 	@Override
 	public void visit(Var_var var_var) {
-		 Obj obj = Tab.currentScope().findSymbol(var_var.getI1());
+		Obj obj = Tab.currentScope().findSymbol(var_var.getI1());
 
 		if(obj == null || obj == Tab.noObj) {
-			if (currentMethod != null) {
-				obj = Tab.insert(Obj.Var, var_var.getI1(), currentType);
+			String fieldName = var_var.getI1();
+			if (this.currentClass == null) {
+				obj = Tab.insert(Obj.Var, fieldName, this.currentType);
+				if (this.currentMethod == null) {
+					// global var
+					obj.setLevel(0);
+				} else {
+					// local var of global method
+					//obj.setAdr(this.fieldCnt++);
+					obj.setLevel(1);
+				}
 			} else {
-				if (currentClass != null) {
-					for (Obj o : this.currentClass.getType().getMembers()) {
-						report_info(o.getName() + " " + o.getAdr(), var_var);
-					}
-					obj = Tab.insert(Obj.Fld, var_var.getI1(), currentType);
+				if (this.currentMethod == null) {
+					// class field
+					obj = Tab.insert(Obj.Fld, fieldName, this.currentType);
 					obj.setAdr(this.fieldCnt++);
 					obj.setLevel(1);
 				} else {
-					obj = Tab.insert(Obj.Var, var_var.getI1(), currentType);
+					// local var of class method
+					obj = Tab.insert(Obj.Var, fieldName, this.currentType);
+					//obj.setAdr(this.fieldCnt++);
+					obj.setLevel(2);
 				}
-				
 			}
-		}
-		else{
+		} else{
 			report_error("Dvostruka definicija promenljiva: " + var_var.getI1(), var_var);
 		}
 	}
@@ -389,15 +417,28 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Obj obj = Tab.currentScope().findSymbol(var_arr.getI1());
 		
 		if(obj == null || obj == Tab.noObj) {
-			if (currentMethod != null) {
-				obj = Tab.insert(Obj.Var, var_arr.getI1(), new Struct(Struct.Array, currentType));
+			String fieldName = var_arr.getI1();
+			if (this.currentClass == null) {
+				obj = Tab.insert(Obj.Var, fieldName, new Struct(Struct.Array, this.currentType));
+				if (this.currentMethod == null) {
+					// global var
+					obj.setLevel(0);
+				} else {
+					// local var of global method
+					//obj.setAdr(this.fieldCnt++);
+					obj.setLevel(1);
+				}
 			} else {
-				if (currentClass != null) {
-					obj = Tab.insert(Obj.Fld, var_arr.getI1(), new Struct(Struct.Array, currentType));
+				if (this.currentMethod == null) {
+					// class field
+					obj = Tab.insert(Obj.Fld, fieldName, new Struct(Struct.Array, this.currentType));
 					obj.setAdr(this.fieldCnt++);
 					obj.setLevel(1);
 				} else {
-					obj = Tab.insert(Obj.Var, var_arr.getI1(), new Struct(Struct.Array, currentType));
+					// local var of class method
+					obj = Tab.insert(Obj.Var, fieldName, new Struct(Struct.Array, this.currentType));
+					//obj.setAdr(this.fieldCnt++);
+					obj.setLevel(2);
 				}
 			}
 		
@@ -429,7 +470,33 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		currentType = Tab.noType;
 	}
 	
-	private Obj searchLocals(Struct scopeHolder, String targetName) {
+	private static Obj findSymbol(String targetName) {
+		Obj obj = null;
+		
+		// local
+		obj = Tab.currentScope().findSymbol(targetName);
+		if (obj != null) return obj;
+		
+		// current class
+		if (Tab.currentScope().getOuter() != null) {
+			obj = Tab.currentScope().getOuter().findSymbol(targetName);
+			if (obj != null) return obj;
+		}
+		
+		// global
+		obj = Tab.find(targetName);
+		return obj;
+	}
+	
+	private static Obj findCurClassSymbol(String targetName) {
+		Obj obj = null;
+		if (Tab.currentScope().getOuter() != null)
+			obj = Tab.currentScope().getOuter().findSymbol(targetName);
+		return obj;
+	}
+	
+	private static Obj findScopeSymbol(Struct scopeHolder, String targetName) {
+		// local
 		for (Obj sym : scopeHolder.getMembers()) {
 			if (sym.getName().equals(targetName)) {
 				return sym;
@@ -438,17 +505,23 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		return null;
 	}
 	
+	private static boolean isNameInCurScope(String name) {
+		Obj obj = Tab.currentScope().findSymbol(name);
+		return !(obj == null);
+	}
+	
 	//Designator
 	@Override
 	public void visit(Designator_var designator_var) {
-		Obj obj = Tab.find(designator_var.getI1());
+		Obj obj = SemanticAnalyzer.findSymbol(designator_var.getI1());
 		if(obj == Tab.noObj || obj == null) {
 			report_error("Pristup nedefinisanoj varijabli: " + designator_var.getI1(), designator_var);
 			obj = Tab.noObj;
 		}
 		else if(obj.getKind() != Obj.Var		// Ovo je simbol 'od jedne reci'
-				&& obj.getKind() != Obj.Con 	// te ne moze biti Obj.Elem ili Obj.Fld
+				&& obj.getKind() != Obj.Con 	// te ne moze biti Obj.Elem
 				&& obj.getKind() != Obj.Meth
+				&& obj.getKind() != Obj.Fld
 			) {
 			report_error("Neadekvatna varijabla: " + designator_var.getI1(), designator_var);
 			obj = Tab.noObj;
@@ -458,19 +531,43 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	@Override
+	public void visit(Designator_this designator_this) {
+		this.currentClassScope = false;
+		designator_this.obj = designator_this.getDsgScopeMore().obj;
+	}
+	
+	@Override
 	public void visit(DsgArrayName dsgArrayName) {
-		Obj obj = Tab.find(dsgArrayName.getI1());
+		Obj obj = SemanticAnalyzer.findSymbol(dsgArrayName.getI1());
 		if(obj == Tab.noObj || obj == null) {
 			report_error("Pristup nedefinisanoj nizovskoj varijabli: " + dsgArrayName.getI1(), dsgArrayName);
 			obj = Tab.noObj;
 		}
-		else if(obj.getKind() != Obj.Var 						// Nema const nizova!
+		else if((obj.getKind() != Obj.Var && obj.getKind() != Obj.Fld) 	// Nema const nizova!
 				|| obj.getType().getKind() != Struct.Array) {
 			report_error("Neadekvatna varijabla niza: " + dsgArrayName.getI1(), dsgArrayName);
 			obj = Tab.noObj;
 		}
 		
 		dsgArrayName.obj = obj;
+	}
+	
+	@Override
+	public void visit(DsgThis dsgThis) {
+		Obj obj = null;
+		if (this.currentMethod == null || this.currentClass == null) {
+			report_error("Kljucna rec 'this' van klasne metode ", dsgThis);
+			obj = Tab.noObj;
+		} else {
+			obj = Tab.currentScope().findSymbol("this");
+			if (obj == null || obj == Tab.noObj) {
+				report_error("Neadekvatan implicitni parametar this ", dsgThis);
+				obj = Tab.noObj;
+			}
+		}
+		dsgThis.obj = obj;
+		this.currentType = obj.getType();
+		this.currentClassScope = true;
 	}
 	
 	@Override
@@ -505,7 +602,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(DsgScopeName dsgScopeName) {
-		Obj obj = Tab.find(dsgScopeName.getI1());
+		Obj obj = SemanticAnalyzer.findSymbol(dsgScopeName.getI1());
 		if(obj == Tab.noObj || obj == null) {
 			report_error("Pristup nedefinisanom tipu klase: " + dsgScopeName.getI1(), dsgScopeName);
 			obj = Tab.noObj;
@@ -546,7 +643,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			obj = Tab.noObj;
 		else {
 			String fieldName = dsgScopeMore_var.getI1();
-			obj = this.searchLocals(scope, fieldName);
+			obj = this.currentClassScope 
+					? SemanticAnalyzer.findCurClassSymbol(fieldName)
+					: SemanticAnalyzer.findScopeSymbol(scope, fieldName);
+			this.currentClassScope = false;
+			
 			if (obj == null) {
 				if (fieldName.equals("length")) {
 					obj = new Obj(Obj.Con, "arr.length", Tab.intType);
@@ -572,7 +673,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			obj = Tab.noObj;
 		} else {
 			String fieldName = dsgScopeMore_elem.getDsgScopeArrayName().getI1();
-			obj = this.searchLocals(scope, fieldName);
+			obj = this.currentClassScope 
+					? SemanticAnalyzer.findCurClassSymbol(fieldName)
+					: SemanticAnalyzer.findScopeSymbol(scope, fieldName);
+			this.currentClassScope = false;
+			
 			if (obj == null) {
 				report_error("Neadekvatan pristup polju tipa niz: " + fieldName, dsgScopeMore_elem);
 				obj = Tab.noObj;
@@ -594,7 +699,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			obj = Tab.noObj;
 		else {
 			String fieldName = dsgScopeMore_scope_var.getI2();
-			obj = this.searchLocals(scope, fieldName);
+			obj = this.currentClassScope 
+					? SemanticAnalyzer.findCurClassSymbol(fieldName)
+					: SemanticAnalyzer.findScopeSymbol(scope, fieldName);
+			this.currentClassScope = false;
+			
 			if (obj == null) {
 				if (fieldName.equals("length")) {
 					obj = new Obj(Obj.Con, "arr.length", Tab.intType);
@@ -621,7 +730,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 		else {
 			String fieldName = dsgScopeMore_scope_elem.getDsgScopeArrayName().getI1();
-			obj = this.searchLocals(scope, fieldName);
+			obj = this.currentClassScope 
+					? SemanticAnalyzer.findCurClassSymbol(fieldName)
+					: SemanticAnalyzer.findScopeSymbol(scope, fieldName);
+			this.currentClassScope = false;
+			
 			if (obj == null) {
 				report_error("Neadekvatan pristup polju tipa niz: " + fieldName, dsgScopeMore_scope_elem);
 				dsgScopeMore_scope_elem.obj = Tab.noObj;
@@ -708,15 +821,19 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		} 
 		else {
 			Pair method = methodCalls.pop();
-			int fp_ix = method.fp_ix > 0 ? method.fp_ix-1 : 0;
-			if (fp_ix > method.obj.getLevel()
-				|| fp_ix < method.obj.getLevel()
+			// TODO: Ne baca gresku kad ima implicitni this umesto parama
+			int nParam = method.fp_ix > 0 ? method.fp_ix-1 : 0;
+			if (nParam > method.obj.getLevel()
+				|| nParam < method.obj.getLevel()
 			) {
-				report_error("Broj stvarnih parametara (" + fp_ix + ") razlicit od ocekivanog (" + method.obj.getLevel() + ").", factorSub_meth);
+				report_error("Broj stvarnih parametara (" + nParam + ") razlicit od ocekivanog (" + method.obj.getLevel() + ").", factorSub_meth);
 				factorSub_meth.struct = Tab.noType;
 			}
 			else {
 				factorSub_meth.struct = factorSub_meth.getMethodInvokeName().obj.getType();
+				if (factorSub_meth.getMethodInvokeName().obj.getFpPos() != 0) 
+					// klasna metoda
+					this.curTemps--;
 			}
 		}
 	}
@@ -733,7 +850,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			factorSub_new_array.struct = Tab.noType;
 		}
 		else
-			factorSub_new_array.struct = new Struct(Struct.Array, currentType);	
+			factorSub_new_array.struct = new Struct(Struct.Array, this.currentType);	
 	}
 	
 	@Override
@@ -952,7 +1069,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(DesignatorStatement_assign designatorStatement_assign) {
 		Obj desObj = designatorStatement_assign.getDesignator().obj;
 		
-		//if (desObj == null) return;
+		if (desObj == null || desObj == Tab.noObj) return;
 		
 		int kind = desObj.getKind();
 		Struct desStruct = desObj.getType(),
@@ -1005,6 +1122,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if(obj.getKind() != Obj.Meth) {
 			report_error("Ime " + obj.getName() + " nije naziv metode.", designatorStatement_meth);
 		}
+		if (obj.getFpPos() != 0) 
+			// klasna metoda
+			this.curTemps=0;
 	}
 	
 	// Statement

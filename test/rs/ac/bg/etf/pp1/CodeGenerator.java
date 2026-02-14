@@ -15,6 +15,7 @@ import rs.etf.pp1.symboltable.concepts.Struct;
 public class CodeGenerator extends VisitorAdaptor {
 	
 	private int mainPc;
+	private Obj currentMethod;
 	
 	public int getMainPc() {
 		return mainPc;
@@ -64,26 +65,60 @@ public class CodeGenerator extends VisitorAdaptor {
 		
 		methodName.obj.setAdr(Code.pc);
 		
-		Code.put(Code.enter);
+		Code.put(Code.enter); 
 		Code.put(methodName.obj.getLevel());
 		Code.put(methodName.obj.getLocalSymbols().size());
+		
+		this.currentMethod = methodName.obj;
 	}
 	
 	@Override
 	public void visit(MethodDecl methodDecl) {
+		this.currentMethod = null;
+		
 		Code.put(Code.exit);
 		Code.put(Code.return_);
 	}
 	
+	private Stack<Obj> thisStack = new Stack<Obj>();
+	
+	@Override
+	public void visit(MethodInvokeName methodInvokeName) { // TODO: nVars i nTmps od currMeth, a ne invoke meth
+		Obj methodObj = methodInvokeName.getDesignator().obj;
+		if (methodObj.getFpPos() != 0) {
+			// klasna metoda
+			String tmpName = "_"+ methodObj.getName() +"_tmp_"+this.thisStack.size();
+			int nVars = this.currentMethod.getLocalSymbols().size();
+			int nTmps = this.thisStack.size();
+			
+			Obj tmpObj = new Obj(Obj.Var, tmpName, Tab.intType, nVars - nTmps - 1, 2);
+			this.thisStack.push(tmpObj);
+			
+			Code.put(Code.dup);
+			Code.store(tmpObj);
+		}
+		
+		
+	}
+	
 	@Override
 	public void visit(DsgArrayName dsgArrayName) {
+		if (dsgArrayName.obj.getKind() == Obj.Fld)
+			Code.put(Code.load_n); // load this
 		Code.load(dsgArrayName.obj);
 	}
 	
 	@Override
 	public void visit(DsgScopeName dsgScopeName) {
+		if (dsgScopeName.obj.getKind() == Obj.Fld)
+			Code.put(Code.load_n); // load this
 		if (dsgScopeName.obj.getKind() != Obj.Type)
 			Code.load(dsgScopeName.obj);
+	}
+	
+	@Override
+	public void visit(DsgThis dsgThis) {
+		Code.load(dsgThis.obj);
 	}
 	
 	@Override
@@ -95,28 +130,40 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(DsgScopeMore_var dsgScopeMore_var) {		
 		SyntaxNode par = dsgScopeMore_var.getParent();
 		if(par instanceof Designator_scope_elem 
-				|| par instanceof DsgScopeMore_scope_elem)
+				|| par instanceof DsgScopeMore_scope_elem
+				|| par instanceof DsgScopeMore_scope_var)
 			Code.load(dsgScopeMore_var.obj);
 	}
 	
 	@Override
 	public void visit(DsgScopeMore_elem dsgScopeMore_elem) {
 		SyntaxNode parent = dsgScopeMore_elem.getParent();
-		if(parent instanceof DsgScopeMore_scope_var || parent instanceof DsgScopeMore_scope_elem)
+		if(parent instanceof DsgScopeMore_scope_var 
+				|| parent instanceof DsgScopeMore_scope_elem)
 			Code.load(dsgScopeMore_elem.obj);
+	}
+	
+	@Override
+	public void visit(Designator_var designator_var) {
+		if (designator_var.obj.getKind() == Obj.Fld
+				|| (designator_var.obj.getKind() == Obj.Meth 
+					&& designator_var.obj.getFpPos() != 0))
+			Code.put(Code.load_n); // load this
 	}
 	
 	@Override
 	public void visit(DsgScopeMore_scope_var dsgScopeMore_scope_var) {
 		SyntaxNode parent = dsgScopeMore_scope_var.getParent();
-		if(parent instanceof DsgScopeMore_scope_var || parent instanceof DsgScopeMore_scope_elem)
+		if(parent instanceof DsgScopeMore_scope_var 
+				|| parent instanceof DsgScopeMore_scope_elem)
 			Code.load(dsgScopeMore_scope_var.obj);
 	}
 	
 	@Override
 	public void visit(DsgScopeMore_scope_elem dsgScopeMore_scope_elem) {
 		SyntaxNode parent = dsgScopeMore_scope_elem.getParent();
-		if(parent instanceof DsgScopeMore_scope_var || parent instanceof DsgScopeMore_scope_elem)
+		if(parent instanceof DsgScopeMore_scope_var 
+				|| parent instanceof DsgScopeMore_scope_elem)
 			Code.load(dsgScopeMore_scope_elem.obj);
 	}
 	
@@ -142,7 +189,8 @@ public class CodeGenerator extends VisitorAdaptor {
 			// klasna
 		
 			// dohvati __vmtp__
-			Code.put(Code.dup);
+			Code.load(this.thisStack.pop());
+			
 			Code.put(Code.getfield);
 			Code.put2(0);
 		
@@ -153,15 +201,6 @@ public class CodeGenerator extends VisitorAdaptor {
 				Code.put4((int)methName.charAt(ix));
 			}
 			Code.put4(-1);
-		
-			// sklanjanje this
-			if (Tab.noType == factorSub_meth.getMethodInvokeName().getDesignator().obj.getType()) {
-				Code.put(Code.pop);
-			} else {
-				Code.put(Code.dup_x1);
-				Code.put(Code.pop);
-				Code.put(Code.pop);
-			}
 		}
 	}
 	
@@ -184,8 +223,9 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(FactorSub_var factorSub_var) {
 		if (factorSub_var.getDesignator().obj.getName().equals("arr.length"))
 			Code.put(Code.arraylength);
-		else
+		else {
 			Code.load(factorSub_var.getDesignator().obj);
+		}
 	}
 	
 	@Override
@@ -312,6 +352,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(DesignatorStatement_assign stmt) {
 		if (stmt.getExpr().struct.getKind() == Struct.Class) {
 			// TODO: Neki bolji uslov?
+			// TODO: U klasi se ne moze pozvati konstruktor druge klase
 			Code.put(Code.dup);
 			Code.loadConst(
 				VirtualMethodTable.getTableAddress(stmt.getExpr().struct)
@@ -336,7 +377,8 @@ public class CodeGenerator extends VisitorAdaptor {
 			// klasna
 			
 			// dohvati __vmtp__
-			Code.put(Code.dup);
+			Code.load(this.thisStack.pop());
+			
 			Code.put(Code.getfield);
 			Code.put2(0);
 			
@@ -347,9 +389,6 @@ public class CodeGenerator extends VisitorAdaptor {
 				Code.put4((int)methName.charAt(ix));
 			}
 			Code.put4(-1);
-			
-			// sklanjanje this
-			Code.put(Code.pop);
 		}
 		
 		if(obj.getType() != Tab.noType)
