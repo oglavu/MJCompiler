@@ -1,28 +1,38 @@
 program MJProgram 
 
-class A {
-	int broj;
+abstract class Abs {
 	{
-		void meth(int broj) {print(broj);}
+	abstract int zapremina();
+	abstract int Q();
 	}
 }
 
-class B {
-	A a;
+class A extends Abs{
+	int broj;
 	{
-	int meth(int x, int y, int z) { print(x); return x; } 
-	void call_meth(char c) { meth(ord(c), 2, 3); }
+		int zapremina() { return 0; }
+		int Q() { return 4 * zapremina(); }
+	}
+}
+
+class B extends A{
+
+	{
+	int zapremina() { return 10; }
 	}
 }
 
 {
 
-	void main() B b; A a; int c; {
+	void main() Abs abs[]; A a[]; {
 		
-		b = new B;
-		b.a = new A;
-		//c = meth(2,3);
-		b.call_meth('A');
+		abs = new Abs[1];
+		a = new A[1];
+		
+		a[0] = new B;
+		abs[0] = a[0];
+		
+		print(abs[0].Q());
 		
 		return;
 	}

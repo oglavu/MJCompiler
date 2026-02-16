@@ -115,6 +115,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			
 			obj = Tab.insert(Obj.Var, "this", this.currentClass.getType());
 			obj.setFpPos(++this.formParamCnt);
+			obj.setLevel(2);
 			this.currentMethod.setLevel(1);
 			this.currentMethod.setFpPos(1);
 		}
@@ -137,7 +138,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		obj = Tab.insert(Obj.Meth, absMethodName.getI1() , currentType);
 		obj.setAdr(VirtualMethodTable.ABSTRACT_METH_ADR); // apstraktna
-		obj.setLevel(0);
+		obj.setFpPos(1);
+		obj.setLevel(1);
 		
 		VirtualMethodTable.putEntry(currentClass, obj);
 		
@@ -188,9 +190,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(MethodDecl methodDecl) {
 		
 		for(int i=this.maxTemps-1; i>=0; --i) {
-			Tab.insert(Obj.Var, "_"+this.currentMethod.getName()+"_tmp_"+i, Tab.intType);
+			String tmpName = "_"+this.currentMethod.getName()+"_tmp_"+i;
+			Tab.insert(Obj.Var, tmpName, Tab.intType);
 		}
-		
 		
 		Tab.chainLocalSymbols(this.currentMethod);
 		Tab.closeScope();
@@ -293,7 +295,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 	
-	Stack<Pair> methodCalls = new Stack<Pair>();
+	Stack<Pair> methodTrace = new Stack<Pair>();
 	
 	@Override
 	public void visit(MethodInvokeName methodInvokeName) {
@@ -307,7 +309,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			obj = Tab.noObj;
 		}
 		methodInvokeName.obj = obj;
-		methodCalls.push(new Pair(obj, obj.getFpPos() == 0 ? 1 : 2)); // fp krecu od 1
+		methodTrace.push(new Pair(obj, obj.getFpPos() == 0 ? 1 : 2)); // fp krecu od 1
 		if (methodInvokeName.obj.getFpPos() != 0) {
 			// klasna
 			this.curTemps++;
@@ -320,7 +322,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(ActParam actParam) {
 		
 		Struct apStruct = actParam.getExpr().struct;
-		Pair method = methodCalls.peek();
+		Pair method = methodTrace.peek();
 		
 		// TODO: Refactor obavezan
 		if (apStruct == Tab.noType) {
@@ -496,6 +498,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	private static Obj findScopeSymbol(Struct scopeHolder, String targetName) {
+		if (scopeHolder == null || targetName == null) return null;
 		// local
 		for (Obj sym : scopeHolder.getMembers()) {
 			if (sym.getName().equals(targetName)) {
@@ -515,15 +518,23 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(Designator_var designator_var) {
 		Obj obj = SemanticAnalyzer.findSymbol(designator_var.getI1());
 		if(obj == Tab.noObj || obj == null) {
-			report_error("Pristup nedefinisanoj varijabli: " + designator_var.getI1(), designator_var);
-			obj = Tab.noObj;
+			
+			Struct baseClass = this.currentClass.getType().getElemType();
+			while(baseClass != null) {
+				obj = SemanticAnalyzer.findScopeSymbol(baseClass, designator_var.getI1());
+				if (obj != null) break;
+				baseClass = this.currentClass.getType().getElemType();
+			}
 		}
-		else if(obj.getKind() != Obj.Var		// Ovo je simbol 'od jedne reci'
+		if (obj == Tab.noObj || obj == null) {
+			report_error("Pristup nedefinisanoj varijabli " + designator_var.getI1(), designator_var);
+			obj = Tab.noObj;
+		} else if(obj.getKind() != Obj.Var		// Ovo je simbol 'od jedne reci'
 				&& obj.getKind() != Obj.Con 	// te ne moze biti Obj.Elem
 				&& obj.getKind() != Obj.Meth
 				&& obj.getKind() != Obj.Fld
 			) {
-			report_error("Neadekvatna varijabla: " + designator_var.getI1(), designator_var);
+			report_error("Neadekvatna varijabla " + designator_var.getI1(), designator_var);
 			obj = Tab.noObj;
 		}
 		
@@ -815,12 +826,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("Ime " + factorSub_meth.getMethodInvokeName().getDesignator().obj.getName() + " nije naziv metode.", factorSub_meth);
 			factorSub_meth.struct = Tab.noType;
 		} 
-		else if (methodCalls.isEmpty()) {
+		else if (methodTrace.isEmpty()) {
 			report_error("Nedefinisana greska sa imenom metode: " + factorSub_meth.getMethodInvokeName().obj.getName(), factorSub_meth);
 			factorSub_meth.struct = Tab.noType;
 		} 
 		else {
-			Pair method = methodCalls.pop();
+			Pair method = methodTrace.pop();
 			// TODO: Ne baca gresku kad ima implicitni this umesto parama
 			int nParam = method.fp_ix > 0 ? method.fp_ix-1 : 0;
 			if (nParam > method.obj.getLevel()

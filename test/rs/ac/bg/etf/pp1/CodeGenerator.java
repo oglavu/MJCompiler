@@ -83,7 +83,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	private Stack<Obj> thisStack = new Stack<Obj>();
 	
 	@Override
-	public void visit(MethodInvokeName methodInvokeName) { // TODO: nVars i nTmps od currMeth, a ne invoke meth
+	public void visit(MethodInvokeName methodInvokeName) {
 		Obj methodObj = methodInvokeName.getDesignator().obj;
 		if (methodObj.getFpPos() != 0) {
 			// klasna metoda
@@ -127,11 +127,12 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(DsgScopeMore_var dsgScopeMore_var) {		
-		SyntaxNode par = dsgScopeMore_var.getParent();
-		if(par instanceof Designator_scope_elem 
-				|| par instanceof DsgScopeMore_scope_elem
-				|| par instanceof DsgScopeMore_scope_var)
+	public void visit(DsgScopeMore_var dsgScopeMore_var) {	
+		if (dsgScopeMore_var.obj.getKind() == Obj.Meth) return;
+		SyntaxNode parent = dsgScopeMore_var.getParent();
+		if(parent instanceof Designator_scope_elem
+				|| parent instanceof DsgScopeMore_scope_elem
+				|| parent instanceof DsgScopeMore_scope_var)
 			Code.load(dsgScopeMore_var.obj);
 	}
 	
@@ -153,6 +154,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(DsgScopeMore_scope_var dsgScopeMore_scope_var) {
+		if (dsgScopeMore_scope_var.obj.getKind() == Obj.Meth) return;
 		SyntaxNode parent = dsgScopeMore_scope_var.getParent();
 		if(parent instanceof DsgScopeMore_scope_var 
 				|| parent instanceof DsgScopeMore_scope_elem)
@@ -161,6 +163,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(DsgScopeMore_scope_elem dsgScopeMore_scope_elem) {
+		if (dsgScopeMore_scope_elem.obj.getKind() == Obj.Meth) return;
 		SyntaxNode parent = dsgScopeMore_scope_elem.getParent();
 		if(parent instanceof DsgScopeMore_scope_var 
 				|| parent instanceof DsgScopeMore_scope_elem)
@@ -176,6 +179,15 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(FactorSub_new factorSub_new) {
 		Code.put(Code.new_);
 		Code.put2(factorSub_new.struct.getNumberOfFields() * 4);
+		
+		// TODO: U klasi se ne moze pozvati konstruktor druge klase
+		Code.put(Code.dup);
+		Code.loadConst(
+			VirtualMethodTable.getTableAddress(factorSub_new.struct)
+		);
+		Code.put(Code.putfield);
+		Code.put2(0); // 0-th field of each class is vmtp
+		
 	}
 	
 	@Override
@@ -349,19 +361,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(DesignatorStatement_assign stmt) {
-		if (stmt.getExpr().struct.getKind() == Struct.Class) {
-			// TODO: Neki bolji uslov?
-			// TODO: U klasi se ne moze pozvati konstruktor druge klase
-			Code.put(Code.dup);
-			Code.loadConst(
-				VirtualMethodTable.getTableAddress(stmt.getExpr().struct)
-			);
-			Code.put(Code.putfield);
-			Code.put2(0); // 0-th field of each class is vmtp
-		}
-		
-		
+	public void visit(DesignatorStatement_assign stmt) {		
 		Code.store(stmt.getDesignator().obj);
 	}
 	

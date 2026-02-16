@@ -87,8 +87,8 @@ import java_cup.runtime.Symbol;
 "<" 		{ return new_symbol(sym.RELOP_LT, yytext()); }
 "<=" 		{ return new_symbol(sym.RELOP_LE, yytext()); }
 
-"//" {yybegin(COMMENT);}
-<COMMENT> . {yybegin(COMMENT);}
+"//"			{ yybegin(COMMENT); }
+<COMMENT> .		{ yybegin(COMMENT); }
 <COMMENT> "\r\n" { yybegin(YYINITIAL); }
 
 [0-9]+							{ return new_symbol(sym.NUMBER, new Integer (yytext())); }
