@@ -2,6 +2,7 @@
 package rs.ac.bg.etf.pp1;
 
 import java_cup.runtime.Symbol;
+import org.apache.log4j.Logger;
 
 %%
 
@@ -15,6 +16,15 @@ import java_cup.runtime.Symbol;
 	// ukljucivanje informacije o poziciji tokena
 	private Symbol new_symbol(int type, Object value) {
 		return new Symbol(type, yyline+1, yycolumn, value);
+	}
+
+	public boolean errorDetected = false;
+	private Logger log = Logger.getLogger(getClass());
+	public void report_error(String message, int line, int column) {
+		errorDetected  = true;
+		StringBuilder msg = new StringBuilder(message);
+		msg.append (" na liniji ").append(line).append(" i koloni ").append(column);
+		log.error(msg.toString());
 	}
 
 %}
@@ -94,10 +104,9 @@ import java_cup.runtime.Symbol;
 [0-9]+							{ return new_symbol(sym.NUMBER, new Integer (yytext())); }
 ("true"|"false")				{ return new_symbol(sym.BOOL, yytext().equals("true")? 1 : 0); }
 ([a-z]|[A-Z])[a-z|A-Z|0-9|_]* 	{return new_symbol (sym.IDENT, yytext()); }
-. { System.err.println("Leksicka greska ("+yytext()+") u liniji "+(yyline+1)); }
 "'"."'"							{ return new_symbol(sym.CHARACTER, new Character (yytext().charAt(1))); }
 
-
+. { report_error("Leksicka greska: Sekvenca karaktera '"+(yytext())+"' nije prepoznata", yyline+1, yycolumn+1); }
 
 
 

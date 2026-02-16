@@ -1,11 +1,9 @@
 package rs.ac.bg.etf.pp1;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import java_cup.runtime.Symbol;
 
@@ -30,9 +28,20 @@ public class Compiler {
 		
 		Logger log = Logger.getLogger(Compiler.class);
 		
+		if (args.length != 1) {
+			log.error("Ime izvornog fajla nije specificirano.");
+			return;
+		}
+		
+		Path sourcePath = Paths.get(args[0]);
+		if (!Files.exists(sourcePath)) {
+			log.error("Zadati fajl ne postoji.");
+			return;
+		}
+		
 		Reader br = null;
 		try {
-			File sourceCode = new File("test/test303.mj");
+			File sourceCode = new File(args[0]);
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 			
 			br = new BufferedReader(new FileReader(sourceCode));
@@ -45,8 +54,13 @@ public class Compiler {
 	        Program prog = (Program)(s.value);
 	        
 			/* Ispis AST */
-			log.info(prog.toString(""));
-			
+	        if (lexer.errorDetected) {
+	        	log.error("Lekser ne prihvata sekvencu.");
+	        	return;
+	        } else {
+	        	log.info(prog.toString(""));
+	        }
+	        
 			if(!p.errorDetected){
 				log.info("Parsiranje uspesno zavrseno!");
 			}else{
@@ -80,7 +94,7 @@ public class Compiler {
 			}
 			
 			/* Generisanje koda */
-			File objFile = new File("test/program.obj");
+			File objFile = new File("test/"+sourcePath.getFileName().toString()+".obj");
 			if(objFile.exists()) objFile.delete();
 			
 			CodeGenerator cg = new CodeGenerator();

@@ -3,17 +3,15 @@
 	<target name="delete">
 		<delete>
 			<fileset dir="src/rs/ac/bg/etf/pp1">
-				<exclude name="sym_old.java" />
 				<exclude name="util/Log4JUtils.java" />
-				<exclude name="Yylex.java" />
-				<exclude name="RuleVisitor.java" />
-				<exclude name="SemanticPass.java" />
 				<exclude name="CodeGenerator.java" />
-				<exclude name="CounterVisitor.java" />
+				<exclude name="Compiler.java" />
+				<exclude name="SemanticAnalyzer.java" />
+				<exclude name="VirtualMethodTable.java" />	
 			</fileset>
 		</delete>
 		<delete>
-			<fileset dir="spec">
+			<fileset dir="src/spec">
 				<exclude name="mjlexer.flex" />
 				<exclude name="mjparser.cup" />
 			</fileset>
@@ -23,7 +21,7 @@
 		<java jar="lib/JFlex.jar" fork="true">
 			<arg value="-d" />
 			<arg value="./src/rs/ac/bg/etf/pp1" />
-			<arg value="spec/mjlexer.flex" />
+			<arg value="src/spec/mjlexer.flex" />
 		</java>
 	</target>
 	<target name="parserGen" depends="lexerGen">
@@ -37,7 +35,7 @@
 	        <arg value="-symbols" />
 	        <arg value="sym" />
 			<arg value="-buildtree" />
-			<arg value="spec/mjparser.cup" />
+			<arg value="src/spec/mjparser.cup" />
 		</java>
 	</target>
 	<target name="repackage" depends="parserGen">
@@ -51,6 +49,7 @@
 				<pathelement path="lib/cup_v10k.jar" />
 				<pathelement path="lib/log4j-1.2.17.jar" />
 				<pathelement path="lib/symboltable-1-1.jar" />
+				<pathelement path="lib/mj-runtime-1.1.jar"/>
 			</classpath>
 		</javac>
 	</target>

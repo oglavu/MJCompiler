@@ -1,0 +1,15 @@
+// Proverava rad skenera.
+// Ocekivani rezultat: Dve detektovane nepravilnosti
+// 		(1) identifikator pocinje sa _
+//		(2) nedefinisan simbol !
+
+
+program p
+
+int _var;
+
+{
+	void main() bool b; {
+		b = !b;
+	}
+}
