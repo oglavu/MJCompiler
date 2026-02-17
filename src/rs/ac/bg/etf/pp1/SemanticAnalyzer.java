@@ -1064,7 +1064,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(Condition condition) {
+	public void visit(Condition_ok condition) {
 		condition.struct = condition.getCondTermList().struct;
 	}
 	

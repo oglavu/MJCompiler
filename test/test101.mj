@@ -1,0 +1,28 @@
+// Provera oporavka od greske
+// Ocekivan rezultat: Izvrsiti sintaksnu i leksicku analizu
+//					  koja se oporavlja od navedenih gresaka
+
+program MJProgram 
+
+const int , b=2;	// sintaksna greska u definiciji konstante
+int 'a', c=, 2f;	// sintaksna greska u deklaraciji varijable
+
+class Derived extends ds-a {	// sintaksna greska u prosirivanju natklase
+
+	char a-;		// sintaksna greska u deklaraciji varijable
+	
+	{
+	}
+}
+
+{
+	void main() int a; bool b; {
+	
+		a = 4-;		// sintaksna greska u naredbi dodele
+		b = !b;		// leksicka greska - ne postoji operator !
+		
+		if (a=-)	// sintaksna greska u uslovu if-a
+			a++;
+		
+	}
+}

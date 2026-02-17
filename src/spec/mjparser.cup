@@ -9,9 +9,6 @@ parser code {:
 	boolean errorDetected;
 	
 	Logger log = Logger.getLogger(getClass());
-   
-   
-    // slede redefinisani metodi za prijavu gresaka radi izmene teksta poruke
      
     public void report_fatal_error(String message, Object info) throws java.lang.Exception {
       done_parsing();
@@ -19,18 +16,17 @@ parser code {:
     }
   
     public void syntax_error(Symbol cur_token) {
-        report_error("\nSintaksna greska", cur_token);
+        report_error("Sintaksna greska", cur_token);
     }
   
     public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
         report_fatal_error("Fatalna greska, parsiranje se ne moze nastaviti", cur_token);
     }
 
-    public void report_error(String message, Object info) {
+    public void report_error(String message, int line) {
     	errorDetected = true;
     	StringBuilder msg = new StringBuilder(message); 
-    	if (info instanceof Symbol)
-            msg.append (" na liniji ").append(((Symbol)info).left);
+        msg.append (" na liniji ").append(line);
         log.error(msg.toString());
     }
 
@@ -95,11 +91,14 @@ Decl ::=	(Decl_const) ConstDecl
 			(Decl_class) ClassDecl
 			;
 
-ConstDecl ::=	(ConstDecl) CONST Type ConstList SEMI;
-
-ConstList ::=	(ConstList_list) ConstList COMMA ConstAssign
+ConstDecl ::=	(ConstDecl_ok) CONST Type ConstList SEMI
 				|
-				(ConstList_comma) ConstAssign
+				(ConstDecl_err) CONST error:e SEMI {: parser.report_error("Oporavak od sentencijalne greske pri dodeli konstante", eleft); :}
+				;
+
+ConstList ::=	(ConstList_list) ConstAssign COMMA ConstList
+				|
+				(ConstList_const) ConstAssign
 				;
 
 ConstAssign ::=	(ConstAssign) IDENT ASSIGN Literal;
@@ -112,6 +111,9 @@ Literal ::= 	(Literal_n) NUMBER
 				;
 
 VarDecl ::= (VarDecl_var) Type VarList SEMI
+			|
+			(VarDecl_err) error:e SEMI 
+			{: parser.report_error("Oporavak od sentencijalne greske pri deklaraciji varijable", eleft); :}
 			;
 
 VarList ::= (VarList_list) VarList COMMA Var
@@ -122,6 +124,9 @@ VarList ::= (VarList_list) VarList COMMA Var
 Var ::=	(Var_var) IDENT
 		|
 		(Var_arr) IDENT LBRACK RBRACK
+		|
+		(Var_err) error:e 
+		{: parser.report_error("Oporavak od parcijalne greske pri deklaraciji varijable", eleft); :}
 		;
 		
 Type ::=	(Type) IDENT;
@@ -138,6 +143,9 @@ AbstractAtr ::=	(AbstractAtr_abs) ABSTRACT
 				;
 
 ExtendsAtr ::=	(ExtendsAtr_ext) EXTENDS Type
+				|
+				(ExtendsAtr_err) error:e
+				{: parser.report_error("Oporavak od greske pri prosirivanju natklase  ", eleft); :}
 				|
 				(ExtendsAtr_e) /* epsilon */
 				;
@@ -206,6 +214,9 @@ FormParamMore ::=	(FormParamMore_list) COMMA FormParam FormParamMore
 FormParam ::=	(FormParam_var) Type IDENT
 				|
 				(FormParam_arr) Type IDENT LBRACK RBRACK
+				|
+				(FormParam_err) error:e 
+				{: parser.report_error("Oporavak od greske u deklaraciji formalnih parametara", eleft); :}
 				;
 				
 VarDeclList ::=	(VarDeclList_list) VarDeclList VarDecl
@@ -229,7 +240,7 @@ MethodInvokeName ::=	(MethodInvokeName) Designator;
 
 // --------------- Statement ---------------
 
-Statement ::=	(Statement_ds) DesignatorStatement SEMI
+Statement ::=	(Statement_ds) DesignatorStatement 
 				|
 				(Statement_if) IF LPAREN Condition RPAREN StatementThen Else
 				|
@@ -254,16 +265,13 @@ Statement ::=	(Statement_ds) DesignatorStatement SEMI
 				(Statement_print2) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
 		  		;
              	
-DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
+DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr SEMI
 						|
-						(DesignatorStatement_meth) MethodInvokeName LPAREN ActParamList RPAREN
+						(DesignatorStatement_meth) MethodInvokeName LPAREN ActParamList RPAREN SEMI
 						|
-						(DesignatorStatement_error) error:e
-						{: parser.report_error("Oporavak od greske u DS. Linija: " + eleft, null); :}
+						(DesignatorStatement_inc) Designator INC SEMI
 						|
-						(DesignatorStatement_inc) Designator INC
-						|
-						(DesignatorStatement_dec) Designator DEC
+						(DesignatorStatement_dec) Designator DEC 
 						;
 
 StatementList ::= 	(StatementList_rec) StatementList Statement
@@ -318,7 +326,11 @@ ForBodyStatement ::=	(ForBodyStatement) Statement;
 
 // --------------- Condition ---------------
 
-Condition ::=	(Condition) CondTermList;
+Condition ::=	(Condition_ok) CondTermList
+				|
+				(Condition_bad) error:e
+				{: parser.report_error("Oporavak od greske u naredbi if", eleft); :}
+				;
 				
 CondTermList ::=	(CondTermList_list) CondTermList OR CondTerm
 					|
@@ -341,6 +353,9 @@ CondFact ::= 	(CondFact_expr) ExprNoTernary
 Expr ::=	(Expr_noternary) ExprNoTernary
 			|
 			(Expr_ternary) Condition QUESTION CondTrueExpr COLON CondFalseExpr
+			|
+			(Expr_err) error:e
+			{: parser.report_error("Oporavak od greske u operaciji dodele", eleft); :}			
 		 	;
 		 	
 CondTrueExpr ::=	(CondTrueExpr) Expr;
