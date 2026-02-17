@@ -1,0 +1,97 @@
+// Provera designatora
+// Ocekivani rezultat: brojevi 1-17
+program p
+
+class C {
+	int num;
+	int niz[];
+}
+
+class B {
+	C c;
+	C Cniz[];
+	int niz[];
+	int num;
+}
+
+class A {
+	B b;
+	B Bniz[];
+	int niz[];
+	int num;
+}
+
+{
+	void main() A a; A niz[]; {
+	
+		a = new A;
+		niz = new A[1];
+		niz[0] = new A;
+		
+		a.b = new B;
+		a.niz = new int[10];
+		a.Bniz = new B[20];
+		a.Bniz[0] = new B;
+		a.Bniz[0].niz = new int[3];
+		niz[0].b = new B;
+		niz[0].niz = new int[6];
+		niz[0].b.niz = new int[11];
+		niz[0].Bniz = new B[8];
+		niz[0].Bniz[0] = new B;
+		niz[0].Bniz[0].niz = new int[5];
+		
+		a.b.c = new C;
+		a.b.niz = new int[17];
+		niz[0].Bniz[0].c = new C;
+		niz[0].Bniz[0].c.niz = new int[3];
+		niz[0].Bniz[0].Cniz = new C[4];
+		niz[0].Bniz[0].Cniz[0] = new C;
+		
+		niz[0].Bniz[0].Cniz[0].niz = new int[9];
+		
+		a.num = 1;
+		a.niz[0] = 2;
+		niz[0].num = 3;
+		niz[0].niz[0] = 4;
+		
+		a.b.num = 5;
+		a.b.niz[0] = 6;
+		niz[0].b.num = 7;
+		niz[0].b.niz[0] = 8;
+		a.Bniz[0].num = 9;
+		a.Bniz[0].niz[0] = 10;
+		niz[0].Bniz[0].num = 11;
+		niz[0].Bniz[0].niz[0] = 12;
+		
+		a.b.c.num = 13;
+		niz[0].Bniz[0].c.num = 14;
+		niz[0].Bniz[0].c.niz[0] = 15;
+		niz[0].Bniz[0].Cniz[0].num = 16;
+		niz[0].Bniz[0].Cniz[0].niz[0] = 17;
+		
+		print(a.num);
+		print(a.niz[0]);
+		print(niz[0].num);
+		print(niz[0].niz[0]);
+		
+		print(a.b.num);
+		print(a.b.niz[0]);
+		print(niz[0].b.num);
+		print(niz[0].b.niz[0]);
+		print(a.Bniz[0].num);
+		print(a.Bniz[0].niz[0]);
+		print(niz[0].Bniz[0].num);
+		print(niz[0].Bniz[0].niz[0]);
+		
+		print(a.b.c.num);
+		print(niz[0].Bniz[0].c.num);
+		print(niz[0].Bniz[0].c.niz[0]);
+		print(niz[0].Bniz[0].Cniz[0].num);
+		print(niz[0].Bniz[0].Cniz[0].niz[0]);
+		
+		
+		
+		
+	}
+
+}

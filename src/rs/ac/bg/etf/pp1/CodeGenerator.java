@@ -129,8 +129,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(DsgScopeMore_var dsgScopeMore_var) {	
 		if (dsgScopeMore_var.obj.getKind() == Obj.Meth) return;
 		SyntaxNode parent = dsgScopeMore_var.getParent();
-		if(parent instanceof Designator_scope_elem
-				|| parent instanceof DsgScopeMore_scope_elem
+		if(parent instanceof DsgScopeMore_scope_elem
 				|| parent instanceof DsgScopeMore_scope_var)
 			Code.load(dsgScopeMore_var.obj);
 	}
