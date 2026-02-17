@@ -86,7 +86,7 @@ public class CodeGenerator extends VisitorAdaptor {
 		Obj methodObj = methodInvokeName.getDesignator().obj;
 		if (methodObj.getFpPos() != 0) {
 			// klasna metoda
-			String tmpName = "_"+ methodObj.getName() +"_tmp_"+this.thisStack.size();
+			String tmpName = "_"+ this.currentMethod.getName() +"_tmp_"+this.thisStack.size();
 			int nVars = this.currentMethod.getLocalSymbols().size();
 			int nTmps = this.thisStack.size();
 			
@@ -447,7 +447,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(Condition condition) {
+	public void visit(Condition_ok condition) {
 		// da su bili tacni pokupio bi ih neki CondTerm
 		Code.putJump(0); // -> StmtElse
 		skipThen.push(Code.pc - 2);
@@ -574,7 +574,12 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override 
 	public void visit(SwitchExpr switchExpr) {
-		Obj obj = new Obj(Obj.Var, "switchExpr", Tab.intType);
+		
+		String tmpName = "_"+ this.currentMethod.getName() +"_tmp_"+this.thisStack.size();
+		int nVars = this.currentMethod.getLocalSymbols().size();
+		int nTmps = this.thisStack.size();
+		
+		Obj obj = new Obj(Obj.Var, tmpName, Tab.intType, nVars - nTmps - 1, 2);
 		switchTemp.push(obj);
 		Code.store(obj);
 		

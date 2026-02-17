@@ -1236,6 +1236,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(Statement_switch statement_switch) {
+		this.curTemps--;
 		this.switch_depth--;
 		cases.pop();
 	}
@@ -1247,6 +1248,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("Tip u switch naredbi mora biti int", switchExpr);
 		}
 		cases.push(new ArrayList<Integer>());
+		this.curTemps++;
+		if (this.curTemps > this.maxTemps) 
+			this.maxTemps = this.curTemps;
 	}
 	
 	@Override

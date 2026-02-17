@@ -240,7 +240,7 @@ MethodInvokeName ::=	(MethodInvokeName) Designator;
 
 // --------------- Statement ---------------
 
-Statement ::=	(Statement_ds) DesignatorStatement 
+Statement ::=	(Statement_ds) DesignatorStatement SEMI
 				|
 				(Statement_if) IF LPAREN Condition RPAREN StatementThen Else
 				|
@@ -265,11 +265,11 @@ Statement ::=	(Statement_ds) DesignatorStatement
 				(Statement_print2) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
 		  		;
              	
-DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr SEMI
+DesignatorStatement ::= (DesignatorStatement_assign) Designator Assignop Expr
 						|
-						(DesignatorStatement_meth) MethodInvokeName LPAREN ActParamList RPAREN SEMI
+						(DesignatorStatement_meth) MethodInvokeName LPAREN ActParamList RPAREN
 						|
-						(DesignatorStatement_inc) Designator INC SEMI
+						(DesignatorStatement_inc) Designator INC
 						|
 						(DesignatorStatement_dec) Designator DEC 
 						;
