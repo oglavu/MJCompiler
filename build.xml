@@ -17,14 +17,14 @@
 			</fileset>
 		</delete>
 	</target>
-	<target name="lexerGen" depends="delete">
+	<target name="lexerGen">
 		<java jar="lib/JFlex.jar" fork="true">
 			<arg value="-d" />
 			<arg value="./src/rs/ac/bg/etf/pp1" />
 			<arg value="src/spec/mjlexer.flex" />
 		</java>
 	</target>
-	<target name="parserGen" depends="lexerGen">
+	<target name="parserGen">
 		<java jar="lib/cup_v10k.jar" fork="true">
 			<arg value="-destdir" />
 			<arg value="src/rs/ac/bg/etf/pp1" />
@@ -38,11 +38,11 @@
 			<arg value="src/spec/mjparser.cup" />
 		</java>
 	</target>
-	<target name="repackage" depends="parserGen">
+	<target name="repackage">
 		<!--  Replaces all of the references to the old package name in files in the "src" directory  -->
 		<replace dir="src" value="rs.ac.bg.etf.pp1.ast" token="src.rs.ac.bg.etf.pp1.ast" summary="true" />
 	</target>
-	<target name="compile" depends="repackage">
+	<target name="compile" depends="delete, lexerGen, parserGen, repackage">
 		<javac srcdir="src/rs/ac/bg/etf/pp1" includeantruntime="false">
 			<classpath>
 				<pathelement path="lib/JFlex.jar" />
@@ -57,16 +57,16 @@
 
 	<target name="disasm">
 		<java classname="rs.etf.pp1.mj.runtime.disasm">
-			<arg value="test/program.mj.obj"/>
+			<arg value="test/program.obj"/>
 			<classpath>
 				<pathelement location="lib/mj-runtime-1.1.jar"/>
 			</classpath>
 		</java>
 	</target>
 
-	<target name="debug" depends="disasm">
+	<target name="debug">
 			<java classname="rs.etf.pp1.mj.runtime.Run" input="test/input.txt">
-				<arg value="test/program.mj.obj"/>
+				<arg value="test/program.obj"/>
 				<arg value="-debug"/>
 				<classpath>
 					<pathelement location="lib/mj-runtime-1.1.jar"/>
@@ -74,9 +74,9 @@
 			</java>
 		</target>
 	
-	<target name="runObj" depends="debug">
+	<target name="runObj">
 		<java classname="rs.etf.pp1.mj.runtime.Run" input="test/input.txt">
-			<arg value="test/program.mj.obj"/>
+			<arg value="test/program.obj"/>
 			<classpath>
 				<pathelement location="lib/mj-runtime-1.1.jar"/>
 			</classpath>

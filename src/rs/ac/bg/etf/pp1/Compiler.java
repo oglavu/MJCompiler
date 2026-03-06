@@ -33,8 +33,11 @@ public class Compiler {
 			return;
 		}
 		
-		Path sourcePath = Paths.get(args[0]);
-		if (!Files.exists(sourcePath)) {
+		Path mjPath = Paths.get(args[0]);
+		Path objPath = mjPath.resolveSibling(
+				mjPath.getFileName().toString().replaceFirst("[.][^.]+$", "") + ".obj"
+			);
+		if (!Files.exists(mjPath)) {
 			log.error("Zadati fajl ne postoji.");
 			return;
 		}
@@ -94,7 +97,7 @@ public class Compiler {
 			}
 			
 			/* Generisanje koda */
-			File objFile = new File("test/"+sourcePath.getFileName().toString()+".obj");
+			File objFile = new File(objPath.toString());
 			if(objFile.exists()) objFile.delete();
 			
 			CodeGenerator cg = new CodeGenerator();
