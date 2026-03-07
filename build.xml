@@ -1,5 +1,7 @@
 
 <project name="MJCompiler" default="compile" basedir=".">
+	<property name="exe" value="test/program.obj"/>
+	<property name="input" value="test/input.txt"/>
 	<target name="delete">
 		<delete>
 			<fileset dir="src/rs/ac/bg/etf/pp1">
@@ -57,7 +59,7 @@
 
 	<target name="disasm">
 		<java classname="rs.etf.pp1.mj.runtime.disasm">
-			<arg value="test/program.obj"/>
+			<arg value="${exe}"/>
 			<classpath>
 				<pathelement location="lib/mj-runtime-1.1.jar"/>
 			</classpath>
@@ -65,8 +67,8 @@
 	</target>
 
 	<target name="debug">
-			<java classname="rs.etf.pp1.mj.runtime.Run" input="test/input.txt">
-				<arg value="test/program.obj"/>
+			<java classname="rs.etf.pp1.mj.runtime.Run" input="${input}">
+				<arg value="${exe}"/>
 				<arg value="-debug"/>
 				<classpath>
 					<pathelement location="lib/mj-runtime-1.1.jar"/>
@@ -75,8 +77,8 @@
 		</target>
 	
 	<target name="runObj">
-		<java classname="rs.etf.pp1.mj.runtime.Run" input="test/input.txt">
-			<arg value="test/program.obj"/>
+		<java classname="rs.etf.pp1.mj.runtime.Run" input="${input}">
+			<arg value="${exe}"/>
 			<classpath>
 				<pathelement location="lib/mj-runtime-1.1.jar"/>
 			</classpath>
