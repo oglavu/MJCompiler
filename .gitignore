@@ -1,11 +1,9 @@
 .settings
 .classpath
 .project
-lib/*
 bin/*
 logs/*
 *.class
-*.jar
 *.obj
 
 src/spec/mjparser_astbuild.cup
